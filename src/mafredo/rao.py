@@ -1,10 +1,8 @@
 """
 RAO is a data-object for dealing with RAO-type data being
-amplitude and phase
-as function of
-heading and frequency
+amplitude and phase as function of heading and frequency
 
-This class is created to provides methods for the correct interpolation of this type of data which means
+This class is created to provide methods for the correct interpolation of this type of data which means
 - the amplitude and phase are interpolated separately (interpolation of complex numbers result in incorrect amplitude)
 - continuity in heading is considered (eg: interpolation of heading 355 from heading 345 and 0)
 
@@ -14,15 +12,33 @@ The dimensions of the dataset are:
 - amplitude [any]
 - phase [radians]
 
-An attribute "mode"
+An attribute "mode" is added which determine which mode is represented (surge/sway/../yaw) and is needed to determine
+how symmetry should be applied (if any). For heave it does not matter whether a wave comes from sb or ps, but for roll it does.
 
 The amplitude and phase can be anything. But typically would be one of the following:
 - A motion RAO  (result of frequency domain response calculation)
 - A force or moment RAO (result of diffraction analysis)
 - A response spectrum with relative phase angles (result of a motion RAO combined with a wave-spectrum)
 
-
 It is suggested to define the wave_direction as the direction of wave propagation relative to the X-axis. So heading 90 is propagation along the y-axis.
+
+functions:
+
+- wave_force_from_capytaine
+
+regrid:
+
+- regrid_frequency
+- regrud_headings
+
+symmetry:
+
+- apply_symmetry_xz
+
+others:
+
+- anything from xarray. For example myrao['amplitude'].plot() or myrao['amplitude'].sel(wave_direction=180).values
+
 """
 
 import xarray as xr
@@ -37,6 +53,27 @@ class Rao(object):
 
         self._data = xr.Dataset()
         self._data.coords['mode'] = 'not_set'
+
+    def to_xarray_nocomplex(self):
+        """To xarray with complex numbers separated (netCDF compatibility)"""
+
+        e = self._data.copy(deep=True)
+        a = self._data['amplitude'] * self._data['complex_unit']
+        e['real'] = np.real(a)
+        e['imag'] = np.imag(a)
+        e = e.drop_vars('complex_unit')
+        e = e.drop_vars('amplitude')
+        return e
+
+    def from_xarray_nocomplex(self, a, mode):
+        """From xarray with complex numbers separated (netCDF compatibility)"""
+        self._data = a.copy(deep=True)
+        c = a['real'] + 1j * a['imag']
+        self._data['amplitude'] = np.abs(c)
+        self._data['complex_unit'] = c / np.abs(c)
+        self._data = self._data.drop_vars('real')
+        self._data = self._data.drop_vars('imag')
+        self._data.coords['mode'] = mode
 
     def wave_force_from_capytaine(self, filename, mode):
         """
@@ -107,6 +144,44 @@ class Rao(object):
         self._data['complex_unit'] = new_cu
         self._data['amplitude'] = new_amp
 
+    def add_direction(self, wave_direction):
+        """Adds the given direction to the RAO by interpolation"""
+        headings = self._data.coords['wave_direction'].values
+        if wave_direction not in headings:
+            new_headings = np.array((*headings, wave_direction), dtype=float)
+            new_headings.sort()
+            self.regrid_heading(new_headings)
+
+    def add_frequency(self, omega):
+        """Adds the given frequency to the RAO by interpolation"""
+        frequencies = self._data.coords['omega'].values
+        if omega not in frequencies:
+            new_omega = np.array((*frequencies, omega), dtype=float)
+            new_omega.sort()
+            self.regrid_omega(new_omega)
+
+    def scale(self, factor):
+        """Scales the amplitude by the given scale factor"""
+        self._data['amplitude'] *= factor
+
+
+    def get_value(self, omega, wave_direction):
+        """Returns the value at the requested position.
+         If the data-point is not yet available in the database, then the corresponding frequency and wave-direction
+         are added to the grid by linear interpolation.
+
+         """
+
+        # Make sure the datapoint is available.
+        self.add_direction(wave_direction)  # for linear interpolation the
+        self.add_frequency(omega)           # order of interpolations does not matter
+
+        amp =  self._data['amplitude'].sel(wave_direction=wave_direction, omega=omega).values
+        cu = self._data['complex_unit'].sel(wave_direction=wave_direction, omega=omega).values
+
+        return cu * amp
+
+
     def add_symmetry_xz(self):
         """Appends equivalent headings considering xz symmetry to the dataset.
 
@@ -130,16 +205,16 @@ class Rao(object):
         else:
             raise ValueError('Mode coordinate should be set to surge/sway/...yaw but is set to {}'.format(mode))
 
-        headings = self._data.coords['wave_direction'].values
+        directions = self._data.coords['wave_direction'].values
 
-        for heading in headings:
+        for direction in directions:
 
-            heading_copy = np.mod(-heading, 360)
-            if heading_copy in headings:
+            direction_copy = np.mod(-direction, 360)
+            if direction_copy in directions:
                 continue
 
-            sym = self._data.sel(wave_direction=heading)
-            sym.coords['wave_direction'].values = heading_copy
+            sym = self._data.sel(wave_direction=direction)
+            sym.coords['wave_direction'].values = direction_copy
 
             if opposite:
                 sym['complex_unit'] = -sym['complex_unit']
@@ -163,7 +238,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     test = Rao()
-    test.wave_force_from_capytaine(r"C:\data\python\rao\docs\examples\capytaine.nc", "Pitch")
+    test.wave_force_from_capytaine(r"C:\data\python\rao\docs\examples\capytaine.nc", "Roll")
 
     test.add_symmetry_xz()
     #
@@ -171,6 +246,19 @@ if __name__ == "__main__":
     # test.regrid_heading(np.linspace(0,360,5))
 
     test['amplitude'].plot()
+    #
+    plt.figure()
+    # test['amplitude'].sel(wave_direction=270).plot()
+    #
+    # plt.show()
+
+    print(test.get_value(omega = 0.11, wave_direction=30))
+
+    plt.figure()
+    test['amplitude'].sel(omega=0.1).plot()
+
 
     plt.show()
+    # test['omega'].values
+    # test['amplitude'].sel(wave_direction=180).values
 

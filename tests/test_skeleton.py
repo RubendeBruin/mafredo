@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from rao.skeleton import fib
+from mafredo.skeleton import fib
 
 __author__ = "ruben beneden"
 __copyright__ = "ruben beneden"
