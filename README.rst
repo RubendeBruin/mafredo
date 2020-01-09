@@ -1,19 +1,26 @@
-===
-rao
-===
+========
+MaFreDo
+========
 
 
-Add a short description here!
+Marine Frequency Domain
 
 
 Description
 ===========
 
-A longer description of your project goes here...
+A set of tools for working with frequency domain data for marine applications.
 
+-  Rao    : A class for Rao data with methods for interpolation
+-  Hyddb1 : A class for first order hydrodynamic data (added mass, damping, wave-forces)
+
+Inspired by and build to work with:
+
+- capytaine (BEM) [https://github.com/mancellin/capytaine]
+- wavespectra ([https://github.com/metocean/wavespectra])
+- DAVE (General marine modeller) [https://github.com/RubendeBruin/DAVE]
 
 Note
 ====
 
-This project has been set up using PyScaffold 3.2.3. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+
