@@ -43,9 +43,9 @@ class Hyddb1(object):
             self._force[i].to_xarray_nocomplex().to_netcdf(filename, mode="a", group=self._modes[i])
 
     def load_from(self, filename):
-        with xr.open_dataset(filename, group="mass") as ds:
+        with xr.open_dataarray(filename, group="mass") as ds:
             self._mass = ds
-        with xr.open_dataset(filename, group="damping") as ds:
+        with xr.open_dataarray(filename, group="damping") as ds:
             self._damping = ds
 
         self._force = list()
@@ -54,10 +54,6 @@ class Hyddb1(object):
                 r = Rao()
                 r.from_xarray_nocomplex(ds, self._modes[i])
                 self._force.append(r)
-
-
-
-
 
 
     def load_from_capytaine(self, filename):
@@ -79,29 +75,46 @@ class Hyddb1(object):
 
 
     def _order_dofs(self, m):
-        r = np.zeros((6, 6), dtype=float)
-        for i, m1 in enumerate(self._modes):
-            for j,m2 in enumerate(self._modes):
-                r[i,j] = m.sel(
-                    influenced_dof=m1, radiating_dof=m2)
-        return r
+        """M can have a single omega, or multiple"""
+
+        try:
+            n_omega = m['omega'].shape[0]
+        except:
+            n_omega = 1
+
+        if n_omega == 1:
+            r = np.zeros((6, 6), dtype=float)
+            for i, m1 in enumerate(self._modes):
+                for j,m2 in enumerate(self._modes):
+                    r[i,j] = m.sel(
+                        influenced_dof=m1, radiating_dof=m2)
+            return r
+        else:
+
+            r = np.zeros((6,6,n_omega))
+
+            for i, m1 in enumerate(self._modes):
+                for j,m2 in enumerate(self._modes):
+                    r[i,j,:] = m.sel(
+                        influenced_dof=m1, radiating_dof=m2)
+
+            return r
 
 
     def amass(self, omega):
-        """Returns the added mass matrix for given frequency.
+        """Returns the added mass matrix for given frequency or frequencies.
         Linear interpolated is applied if needed"""
 
-        m = self._mass.sel(omega=omega)
-
+        m = self._mass.interp(omega=omega)
         r = self._order_dofs(m)
 
         return r
 
     def damping(self, omega):
-        """Returns the damping matrix for given frequency.
+        """Returns the damping matrix for given frequency or frequencies.
                 Linear interpolated is applied if needed"""
 
-        m = self._damping.sel(omega=omega)
+        m = self._damping.interp(omega=omega)
 
         r = self._order_dofs(m)
 
@@ -141,7 +154,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     hyd = Hyddb1()
-    hyd.load_from_capytaine(r"C:\data\python\rao\docs\examples\capytaine.nc")
+    hyd.load_from_capytaine(r"files/capytaine.nc")
 
     disp = 100*30*5
     omega = 0.01

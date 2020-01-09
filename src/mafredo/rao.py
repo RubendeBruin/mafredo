@@ -107,6 +107,7 @@ class Rao(object):
         self._data.coords['mode'] = mode
 
     def regrid_omega(self,new_omega):
+        """Regrids the omega axis to new_omega [rad/s] """
         new_amp = self._data['amplitude'].interp(omega = new_omega, method='linear')
         new_cu  = self._data['complex_unit'].interp(omega = new_omega, method='linear')
 
@@ -114,7 +115,8 @@ class Rao(object):
         self._data['complex_unit'] = new_cu
         self._data['amplitude'] = new_amp
 
-    def regrid_heading(self, new_headings):
+    def regrid_direction(self, new_headings):
+        """Regrids the omega axis to new_headings [degrees]. """
 
         # repeat the zero heading at the zero + 360
 
@@ -145,15 +147,15 @@ class Rao(object):
         self._data['amplitude'] = new_amp
 
     def add_direction(self, wave_direction):
-        """Adds the given direction to the RAO by interpolation"""
+        """Adds the given direction to the RAO by interpolation [deg]"""
         headings = self._data.coords['wave_direction'].values
         if wave_direction not in headings:
             new_headings = np.array((*headings, wave_direction), dtype=float)
             new_headings.sort()
-            self.regrid_heading(new_headings)
+            self.regrid_direction(new_headings)
 
     def add_frequency(self, omega):
-        """Adds the given frequency to the RAO by interpolation"""
+        """Adds the given frequency to the RAO by interpolation [rad/s]"""
         frequencies = self._data.coords['omega'].values
         if omega not in frequencies:
             new_omega = np.array((*frequencies, omega), dtype=float)
@@ -161,7 +163,10 @@ class Rao(object):
             self.regrid_omega(new_omega)
 
     def scale(self, factor):
-        """Scales the amplitude by the given scale factor"""
+        """Scales the amplitude by the given scale factor (positive numbers only as amplitude can not be negative)"""
+
+        if factor<0:
+            raise ValueError('Amplitude can not be negative. If you need an opposite response then apply a phase change of pi')
         self._data['amplitude'] *= factor
 
 
@@ -238,27 +243,21 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     test = Rao()
-    test.wave_force_from_capytaine(r"C:\data\python\rao\docs\examples\capytaine.nc", "Roll")
+    test.wave_force_from_capytaine(r"../../tests/files/capytaine.nc", "Roll")
 
     test.add_symmetry_xz()
     #
-    # test.regrid_omega(np.linspace(0,4,100))
-    # test.regrid_heading(np.linspace(0,360,5))
+    test.regrid_omega(np.linspace(0,4,100))
+    test.regrid_direction(np.linspace(0, 360, 36))
 
     test['amplitude'].plot()
     #
     plt.figure()
-    # test['amplitude'].sel(wave_direction=270).plot()
-    #
-    # plt.show()
+    test.add_direction(270)
+    test['amplitude'].sel(wave_direction=270).plot()
 
     print(test.get_value(omega = 0.11, wave_direction=30))
 
-    plt.figure()
-    test['amplitude'].sel(omega=0.1).plot()
-
-
     plt.show()
-    # test['omega'].values
-    # test['amplitude'].sel(wave_direction=180).values
+
 

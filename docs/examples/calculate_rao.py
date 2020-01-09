@@ -6,7 +6,8 @@ hyd = hyddb1.Hyddb1()
 
 print('reading data')
 
-hyd.load_from_capytaine(r"capytaine.nc")
+# hyd.load_from_capytaine(r"capytaine.nc")
+hyd.load_from(r"c:\data\temp.nc")
 
 # Barge is 100m x 30m x 5m draft
 Awl = 100*30
@@ -31,6 +32,8 @@ I[2,2] = mass
 I[3,3] = mass * rxx**2
 I[4,4] = mass * ryy**2
 I[5,5] = mass * rzz**2
+
+print(I.diagonal())
 
 # Stiffness matrix
 K = np.zeros((6,6))
