@@ -16,7 +16,7 @@ A set of tools for working with frequency domain data for marine applications.
 Inspired by and build to work with:
 
 - capytaine (BEM) [https://github.com/mancellin/capytaine]
-- wavespectra ([https://github.com/metocean/wavespectra])
+- wavespectra ([https://github.com/wavespectra/wavespectra])
 - DAVE (General marine modeller) [https://open-ocean.org/DAVE]
 
 Note
