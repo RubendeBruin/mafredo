@@ -43,6 +43,7 @@ others:
 
 import xarray as xr
 import numpy as np
+from mafredo.helpers import expand_omega_dim_const, expand_direction_to_full_range
 
 __license__ = "mpl2"
 
@@ -96,6 +97,8 @@ class Rao(object):
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
 
+        dataset['wave_direction'] *= 180 / np.pi # convert rad/s to deg
+
         if 'excitation_force' not in dataset:
             dataset['excitation_force'] = dataset['Froude_Krylov_force'] + dataset['diffraction_force']
 
@@ -108,47 +111,26 @@ class Rao(object):
 
     def regrid_omega(self,new_omega):
         """Regrids the omega axis to new_omega [rad/s] """
-        new_amp = self._data['amplitude'].interp(omega = new_omega, method='linear')
-        new_cu  = self._data['complex_unit'].interp(omega = new_omega, method='linear')
 
-        self._data = xr.Dataset()
-        self._data['complex_unit'] = new_cu
-        self._data['amplitude'] = new_amp
+        # check if the requested omega values are outside the current frequency grid
+        # if so then duplicate the highest or lowest entry to this value
+
+        temp = expand_omega_dim_const(self._data, new_omega)
+        self._data = temp.interp(omega=new_omega, method='linear')
+
+
 
     def regrid_direction(self, new_headings):
         """Regrids the omega axis to new_headings [degrees]. """
 
-        # repeat the zero heading at the zero + 360
+        # repeat the zero heading at the zero + 360 / -360 as needed
+        expanded =  expand_direction_to_full_range(self._data)
+        self._data = expanded.interp(wave_direction=new_headings, method='linear')
 
-        headings = self._data.coords['wave_direction'].values
-
-        repeat = self._data
-
-        if max(headings) - min(headings) < 360:
-
-            if max(headings) < 360:
-                head_first = headings[0]
-                head360 = self._data.sel(wave_direction=head_first)
-                head360.coords['wave_direction'].values += 360
-                repeat = xr.concat([repeat, head360], dim='wave_direction')
-
-            if min(headings) > 0:
-
-                head_last = headings[-1]
-                head360 = self._data.sel(wave_direction=head_last)
-                head360.coords['wave_direction'].values -= 360
-                repeat = xr.concat([head360, repeat], dim='wave_direction')
-
-        new_amp = repeat['amplitude'].interp(wave_direction=new_headings, method='linear')
-        new_cu = repeat['complex_unit'].interp(wave_direction=new_headings, method='linear')
-
-        self._data = xr.Dataset()
-        self._data['complex_unit'] = new_cu
-        self._data['amplitude'] = new_amp
 
     def add_direction(self, wave_direction):
         """Adds the given direction to the RAO by interpolation [deg]"""
-        headings = self._data.coords['wave_direction'].values
+        headings = self._data['wave_direction'].values
         if wave_direction not in headings:
             new_headings = np.array((*headings, wave_direction), dtype=float)
             new_headings.sort()
@@ -156,11 +138,13 @@ class Rao(object):
 
     def add_frequency(self, omega):
         """Adds the given frequency to the RAO by interpolation [rad/s]"""
-        frequencies = self._data.coords['omega'].values
+        frequencies = self._data['omega'].values
         if omega not in frequencies:
             new_omega = np.array((*frequencies, omega), dtype=float)
             new_omega.sort()
             self.regrid_omega(new_omega)
+
+
 
     def scale(self, factor):
         """Scales the amplitude by the given scale factor (positive numbers only as amplitude can not be negative)"""

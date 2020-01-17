@@ -1,13 +1,16 @@
 """
 Hydrodynamic Database 1st Order
 
-
 Units:
 
  added mass : mT, mT*m
  damping: kN/(m/s) or kN*m/(rad/s)
 
+Getting data:
 
+ .force -> gives force RAOs
+ .damping -> gives damping matrix
+ .amass -> gives added mass matrix
 
 Matrix definitions:
 
@@ -16,12 +19,19 @@ The Mass matrix is constructed as follows:
   i = influenced dof
   j = exited dof
 
+Loading data:
+
+  .load_from_capytaine --> import from capytaine .nc database (netCDF)
+  .
+
+
 
 
 """
 import xarray as xr
 import numpy as np
 from mafredo.rao import Rao
+from mafredo.helpers import expand_omega_dim_const,expand_direction_to_full_range
 
 class Hyddb1(object):
 
@@ -60,6 +70,7 @@ class Hyddb1(object):
 
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
+        dataset['wave_direction'] *= 180 / np.pi  # convert rad/s to deg
 
         self._force.clear()
         for mode in self._modes:
@@ -115,7 +126,6 @@ class Hyddb1(object):
                 Linear interpolated is applied if needed"""
 
         m = self._damping.interp(omega=omega)
-
         r = self._order_dofs(m)
 
         return r
@@ -127,12 +137,48 @@ class Hyddb1(object):
         for i in range(6):
             r[i] = self._force[i].get_value(omega=omega, wave_direction=wave_direction)
 
-
         return r
+
+    def force_rao(self, mode):
+        """Return a reference to the internal force rao object
+
+        Args:
+            mode : 0...5 for surge...yaw
+        """
+
+        return self._force[mode]
 
     @property
     def frequencies(self):
         return self._mass['omega'].values
+
+
+    def regrid_omega(self, new_omega):
+
+        exp_damping = expand_omega_dim_const(self._damping, new_omega)
+        exp_mass = expand_omega_dim_const(self._mass, new_omega)
+
+        self._damping = exp_damping.interp(omega=new_omega, method= 'linear')
+        self._mass = exp_mass.interp(omega=new_omega, method = 'linear')
+
+        for i in range(6):
+            self._force[i].regrid_omega(new_omega)
+
+    def regrid_direction(self,new_headings):
+
+        # added mass and damping only depend on omega, not on wave-direction
+        for i in range(6):
+            self._force[i].regrid_direction(new_headings)
+
+    def add_direction(self, wave_direction):
+        # added mass and damping only depend on omega, not on wave-direction
+        for i in range(6):
+            self._force[i].add_direction(wave_direction)
+
+
+    def add_frequency(self, omega):
+        """Adds a frequency to the database by linear interpolation"""
+        self.add_frequencies([omega])
 
     def add_frequencies(self, omegas):
         """Adds more frequencies to the database by linear interpolation"""
@@ -141,10 +187,8 @@ class Hyddb1(object):
         omegas = np.unique(omegas)
         omegas.sort()
 
-        self._damping = self._damping.interp(omega = omegas)
-        self._mass = self._mass.interp(omega=omegas)
-        for i in range(6):
-            self._force[i].regrid_omega(omegas)
+        self.regrid_omega(omegas)
+
 
 
 
