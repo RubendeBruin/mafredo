@@ -12,7 +12,6 @@ def test_extrapolate():
     test.regrid_omega(np.linspace(0,4,100))
     test.regrid_direction(np.linspace(0, 360, 5))
 
-
     value = test.get_value(omega = 0, wave_direction=359)
 
     assert not np.isnan(value)

@@ -65,7 +65,6 @@ class Hyddb1(object):
                 r.from_xarray_nocomplex(ds, self._modes[i])
                 self._force.append(r)
 
-
     def load_from_capytaine(self, filename):
 
         from capytaine.io.xarray import merge_complex_values
