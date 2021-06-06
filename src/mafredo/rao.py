@@ -57,9 +57,14 @@ class Rao(object):
 
 
     @property
-    def n_frequenies(self):
-        return len(self._data.omega.values())
+    def n_frequencies(self):
+        """The number of frequencies in the database"""
+        return len(self._data.omega)
 
+    @property
+    def n_wave_directions(self):
+        """The number of headings or wave-directions """
+        return len(self._data.wave_direction)
 
 
     def to_xarray_nocomplex(self):
