@@ -1,10 +1,49 @@
 """
 Hydrodynamic Database 1st Order
+================================
+
+This class contains all information for first order floating bodies. That is:
+
+- Added mass
+- Damping
+- Wave-forces
+
+Typically all of the above are obtained from BEM package such as capytaine, wamit, diffrac, orcawave, etc.
+
+Added-mass and damping are 6x6 matrices and are a function of frequency
+Wave-forces are a function of heading, mode and frequency.
+
+The frequency grid for added-mass, damping and wave-forces may be the same, but this is not enforced.
 
 Units:
 
  added mass : mT, mT*m
  damping: kN/(m/s) or kN*m/(rad/s)
+
+Definitions:
+
+    Phase angles: "Lagging relative to wave crest"
+
+    pseudo code:
+
+        A = -(omega ** 2) * M_total  \
+                + 1j * omega * B  \
+                + K               # mass, damping, stiffness
+        re = np.real(Fwave)
+        im = np.imag(Fwave)
+        excitation = re - 1j * im
+
+        rao = np.linalg.solve(A, excitation )
+
+        # calculate in time-domain:
+
+        time_phasor = np.exp(1j * t)
+        motions = np.outer(time_phasor, rao)
+        response = np.real(motions)
+        wave_elevation = wave_amplitude * np.real(time_phasor)
+
+Symmetry:
+
 
 Getting data:
 
@@ -21,10 +60,7 @@ The Mass matrix is constructed as follows:
 
 Loading data:
 
-  .load_from_capytaine --> import from capytaine .nc database (netCDF)
-  .
-
-
+  .load_from_capytaine --> import from capytaine .nc database (netCDF) ; requires capytaine to be installed
 
 
 """
@@ -53,14 +89,14 @@ class Hyddb1(object):
             self._force[i].to_xarray_nocomplex().to_netcdf(filename, mode="a", group=self._modes[i])
 
     def load_from(self, filename):
-        with xr.open_dataarray(filename, group="mass") as ds:
+        with xr.open_dataarray(filename, group="mass", engine='netcdf4') as ds:
             self._mass = ds
-        with xr.open_dataarray(filename, group="damping") as ds:
+        with xr.open_dataarray(filename, group="damping", engine='netcdf4') as ds:
             self._damping = ds
 
         self._force = list()
         for i in range(6):
-            with xr.open_dataset(filename, group=self._modes[i]) as ds:
+            with xr.open_dataset(filename, group=self._modes[i], engine='netcdf4') as ds:
                 r = Rao()
                 r.from_xarray_nocomplex(ds, self._modes[i])
                 self._force.append(r)
@@ -187,6 +223,98 @@ class Hyddb1(object):
         omegas.sort()
 
         self.regrid_omega(omegas)
+
+
+    def to_hyd(self, filename, hydrostatics):
+        """Export the database to a .hyd file.
+
+        The exported file will be a single-body, first order .hyd database.
+
+        .Hyd files are databases containing both hydrodynamics and hydrostatics.
+        Both are expressed about the same origin.
+
+        Definition: https://mods.marin.nl/download/attachments/13139976/HYDFILE_Description_Nov_2012.pdf?version=1&modificationDate=1453716460000&api=v2
+
+        A .hyd file contains hydrostatic information as well. This hydrostatic information needs to be provided in the "hydrodtatics" argument.
+
+         - water_depth  : waterdepth (not hydrostatics)
+         - body_draft   : draft of body (m)
+         - waterline    : Z-coordinate of waterline wrt hydrodynamic origin of body (m)
+         - disp_m3      : displacement of body (m3)
+         - Awl_m2       : waterline plane area (m2)
+         - COFX_m       : X-coordinate of centre of flotation (m)
+         - COBX_m       : X-coordinate of centre of buoyancy (m)
+         - KMT_m        : transverse metacentric height KMT measured from keel (m)
+         - KML_m        : longitudinal metacentric height KML measured from keel (m)
+
+        Args:
+            filename : file to write to
+            hydrostatics: A dictionary containing the hydrostatic properties. Optionally define None for all values 0.
+
+        Returns:
+            None
+
+        """
+
+        # checks : frequencies for added mass, damping and wave-frequencies need to be the same
+
+        n_omega_waves = self._force
+
+
+        if hydrostatics is None:
+            hydrostatics = dict()
+            hydrostatics['water_depth'] = 0
+            hydrostatics['body_draft'] = 0
+            hydrostatics['waterline'] = 0
+            hydrostatics['disp_m3'] = 0
+            hydrostatics['Awl_m2'] = 0
+            hydrostatics['COFX_m'] = 0
+            hydrostatics['COBX_m'] = 0
+            hydrostatics['KMT_m'] = 0
+            hydrostatics['KML_m'] = 0
+
+        """ The file consists of 80 character records; each record is divided into 8 sections of 10 
+            characters. The first section is reserved for a (compulsory) keyword. The remaining 
+            seven sections are reserved for (free format) data.
+            
+            We use {:10g} for numbers (general format) which converts the numbers in the best way:
+            '{:10g}'.format(1325123551512511.0)  --> '1.32512e+15'
+            '{:10g}'.format(2.0) --> '         2'
+            '{:10g}'.format(2) --> '         2'
+            '{:10g}'.format(-432.0) --> '      -432'
+            
+        """
+
+        def fixed_format(ident, sections):
+            format = '{:10s}' + len(sections) * '{:10g}'
+            return format.format(ident, *sections)
+
+
+        with open(filename, 'wt') as f:
+
+            # Fist 15 ident lines
+            f.write('IDENT     *** .hyd file exported by MaFreDo        ***\n')
+            for i in range(14):
+                f.write('IDENT     \n')
+
+            #
+            f.write(fixed_format('REFS',
+                                 [hydrostatics['water_depth'],
+                                  hydrostatics['body_draft'],
+                                  hydrostatics['waterline'],
+                                  0]))
+            f.write(fixed_format('SPRING',
+                                 [hydrostatics['disp_m3'],
+                                  hydrostatics['Awl_m2'],
+                                  hydrostatics['COFX_m'],
+                                  hydrostatics['COBX_m'],
+                                  hydrostatics['KMT_m'],
+                                  hydrostatics['KML_m']]))
+
+
+
+
+
 
 
 

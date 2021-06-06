@@ -55,6 +55,13 @@ class Rao(object):
         self._data = xr.Dataset()
         self._data.coords['mode'] = 'not_set'
 
+
+    @property
+    def n_frequenies(self):
+        return len(self._data.omega.values())
+
+
+
     def to_xarray_nocomplex(self):
         """To xarray with complex numbers separated (netCDF compatibility)"""
 
