@@ -66,6 +66,10 @@ class Rao(object):
         """The number of headings or wave-directions """
         return len(self._data.wave_direction)
 
+    @property
+    def wave_directions(self):
+        return self._data.wave_direction.values
+
 
     def to_xarray_nocomplex(self):
         """To xarray with complex numbers separated (netCDF compatibility)"""

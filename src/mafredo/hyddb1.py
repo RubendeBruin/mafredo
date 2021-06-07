@@ -68,6 +68,16 @@ import xarray as xr
 import numpy as np
 from mafredo.rao import Rao
 from mafredo.helpers import expand_omega_dim_const,expand_direction_to_full_range
+from enum import Enum
+
+class Symmetry(Enum):
+    No = 0
+    XZ = 1
+    YZ = 2
+    XZ_and_YZ = 3
+    Circular = 4
+
+
 
 class Hyddb1(object):
 
@@ -79,16 +89,68 @@ class Hyddb1(object):
 
         self._modes = ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']
 
+        self._symmetry = Symmetry.No
+
         self._kg_to_mt = 1/1000
         self._N_to_kN = 1/1000
 
+    @property
+    def n_frequencies(self):
+        """Returns the number of frequencies of the mass, damping and force.
+        Raises a ValueError if mass, force or damping have unequal number of frequencies."""
+        n_freq_rao = self._force[0].n_frequencies
+        n_freq_mass = len(self._mass.omega)
+        n_freq_damping = len(self._damping.omega)
+
+        if n_freq_mass != n_freq_damping:
+            raise ValueError('Mass and damping have different number of frequencies')
+        if n_freq_mass != n_freq_rao:
+            raise ValueError('Mass and force have different number of frequencies')
+
+        return n_freq_rao
+
+    @property
+    def n_wave_directions(self):
+        """Returns the number of wave directions in the first of the RAOs"""
+
+        dirs = [rao.n_wave_directions for rao in self._force]
+        uds = np.unique(dirs)
+        if len(uds) != 1:
+            raise ValueError(f'Force RAOs have different amounts of directions: {uds}')
+
+        return int(uds[0])
+
+    @property
+    def wave_directions(self):
+        return self._force[0].wave_directions
+
+    @property
+    def symmetry(self):
+        return self._symmetry
+
+    @symmetry.setter
+    def symmetry(self, value):
+        if isinstance(value, Symmetry):
+            self._symmetry = value
+
+
     def save_as(self, filename):
+        """Saves the contents of the database using the netcdf format.
+
+        See Also:
+            load_from
+        """
         self._mass.to_netcdf(filename, mode="w", group="mass")
         self._damping.to_netcdf(filename, mode="a", group="damping")
         for i in range(6):
             self._force[i].to_xarray_nocomplex().to_netcdf(filename, mode="a", group=self._modes[i])
 
     def load_from(self, filename):
+        """Loads hydrodynamic data from a netcdf4 file, for example one as saved using save_as.
+
+        See Also:
+            save_as
+        """
         with xr.open_dataarray(filename, group="mass", engine='netcdf4') as ds:
             self._mass = ds
         with xr.open_dataarray(filename, group="damping", engine='netcdf4') as ds:
@@ -102,7 +164,15 @@ class Hyddb1(object):
                 self._force.append(r)
 
     def load_from_capytaine(self, filename):
+        """Loads hydrodynamic data from a  dataset produced with capytaine.
 
+        - Wave forces,
+        - radiation_damping and
+        - added_mass are read.
+
+        See Also:
+            Rao.wave_force_from_capytaine
+        """
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
         dataset['wave_direction'] *= 180 / np.pi  # convert rad/s to deg
@@ -117,7 +187,6 @@ class Hyddb1(object):
         self._damping = dataset['radiation_damping'] * self._N_to_kN
         self._mass = dataset['added_mass'] * self._kg_to_mt
 
-        # apply scaling
 
 
     def _order_dofs(self, m):
@@ -225,7 +294,7 @@ class Hyddb1(object):
         self.regrid_omega(omegas)
 
 
-    def to_hyd(self, filename, hydrostatics):
+    def to_hyd_file(self, filename, hydrostatics):
         """Export the database to a .hyd file.
 
         The exported file will be a single-body, first order .hyd database.
@@ -286,7 +355,7 @@ class Hyddb1(object):
         """
 
         def fixed_format(ident, sections):
-            format = '{:10s}' + len(sections) * '{:10g}'
+            format = '{:10s}' + len(sections) * '{:10g}' + '\n'
             return format.format(ident, *sections)
 
 
@@ -311,13 +380,49 @@ class Hyddb1(object):
                                   hydrostatics['KMT_m'],
                                   hydrostatics['KML_m']]))
 
+            if self.symmetry == Symmetry.No or self.symmetry == Symmetry.Circular:
+                sym = 0
+            elif self.symmetry == Symmetry.XZ:
+                sym = 1
+            elif self.symmetry == Symmetry.XZ_and_YZ:
+                sym = 2
+            else:
+                raise ValueError('Unsupported symmetry type')
 
+            f.write(fixed_format('PARA',
+                                 [self.n_frequencies,
+                                  self.n_wave_directions,
+                                  sym]))                      # Symmetry by default set to None
 
+            for i_omega in range(self.n_frequencies):
+                omega = self._mass.omega.values[i_omega]
+                f.write(fixed_format('OMEGA',[omega]))
 
+                # get added mass matrix for this omega
+                ams = self._mass.sel(omega=omega).values
+                for row in ams:
+                    f.write(fixed_format('ADMASS', row))
 
+                # get added mass matrix for this omega
+                damp = self._damping.sel(omega=omega).values
+                for row in damp:
+                    f.write(fixed_format('BDAMP', row))
 
+                # wave-forces
+                for dir in self.wave_directions:
+                    f.write(fixed_format('WDIR',[dir]))
+                    force = self.force(omega,dir)
 
+                    # force is complex
+                    amp = np.abs(force)
+                    phase = np.rad2deg(np.angle(force))
 
+                    f.write(fixed_format('FAMP', amp))
+                    f.write(fixed_format('FEPS', phase))
+
+            f.write(fixed_format('PARA2',
+                                 [0, 0]))
+            f.write('END\n')
 
 
 if __name__ == "__main__":
