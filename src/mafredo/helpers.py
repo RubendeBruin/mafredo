@@ -79,20 +79,41 @@ def expand_direction_to_full_range(dataset):
 
     return dataset
 
+
+def f10(number, tol=1e-12):
+    """Make a length-10 string representing the given number
+
+    We use {:10g} for numbers (general format) which converts the numbers in the best way:
+            '{:10g}'.format(1325123551512511.0)  --> '1.32512e+15'  (11 chars)
+            '{:10g}'.format(2.0) --> '         2'
+            '{:10g}'.format(2) --> '         2'
+            '{:10g}'.format(-432.0) --> '      -432'
+            '{:10g}'.format(-1.1641532182693481e-10) --> '-1.16415e-10' (12 chars)
+
+    Numbers with an absolute value below tol are exported as 0
+
+    """
+
+    # scientific notation
+
+    if abs(number) < tol:
+        return '         0'
+
+    for formatter in ['{:10g}','{:.6g}','{:.5g}','{:.4g}','{:.3g}','{:.2g}']:
+        s = formatter.format(number)
+
+        if len(s) == 10:
+            return s
+        if len(s) < 10:
+            return (10-len(s))*' '+s
+
+    raise ValueError(f'Can not convert number {number} to a string with length 10')
+
+
 if __name__ == "__main__":
+    pass
 
-    l_inf = wavelength(0.4)
 
-    depths = np.linspace(1,300,100)
-    lamb = []
-    for d in depths:
-        lamb.append(wavelength(0.4,d))
-
-    import matplotlib.pyplot as plt
-    plt.plot(depths, lamb)
-
-    plt.plot([0,300],[l_inf, l_inf])
-    plt.show()
 
 
 

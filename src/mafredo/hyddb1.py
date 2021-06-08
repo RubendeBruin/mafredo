@@ -346,18 +346,14 @@ class Hyddb1(object):
             characters. The first section is reserved for a (compulsory) keyword. The remaining 
             seven sections are reserved for (free format) data.
             
-            We use {:10g} for numbers (general format) which converts the numbers in the best way:
-            '{:10g}'.format(1325123551512511.0)  --> '1.32512e+15'
-            '{:10g}'.format(2.0) --> '         2'
-            '{:10g}'.format(2) --> '         2'
-            '{:10g}'.format(-432.0) --> '      -432'
+            
             
         """
+        from mafredo.helpers import f10
 
         def fixed_format(ident, sections):
-            format = '{:10s}' + len(sections) * '{:10g}' + '\n'
-            return format.format(ident, *sections)
-
+            secs = [f10(s, tol=1e-6) for s in sections]
+            return '{:10s}'.format(ident) + ''.join(secs) + '\n'
 
         with open(filename, 'wt') as f:
 
@@ -423,20 +419,4 @@ class Hyddb1(object):
             f.write(fixed_format('PARA2',
                                  [0, 0]))
             f.write('END\n')
-
-
-if __name__ == "__main__":
-
-    import matplotlib.pyplot as plt
-
-    hyd = Hyddb1()
-    hyd.load_from_capytaine(r"files/capytaine.nc")
-
-    disp = 100*30*5
-    omega = 0.01
-
-    mass = hyd.amass(omega=omega)
-    damping = hyd.damping(omega=omega)
-    force = hyd.force(omega=omega, wave_direction=90)
-
 
