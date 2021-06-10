@@ -15,7 +15,7 @@ Wave-forces are a function of heading, mode and frequency.
 
 The frequency grid for added-mass, damping and wave-forces may be the same, but this is not enforced.
 
-Units:
+Units: SI
 
  added mass : mT, mT*m
  damping: kN/(m/s) or kN*m/(rad/s)
@@ -304,7 +304,7 @@ class Hyddb1(object):
 
         Definition: https://mods.marin.nl/download/attachments/13139976/HYDFILE_Description_Nov_2012.pdf?version=1&modificationDate=1453716460000&api=v2
 
-        A .hyd file contains hydrostatic information as well. This hydrostatic information needs to be provided in the "hydrodtatics" argument.
+        A .hyd file contains hydrostatic information as well. This hydrostatic information needs to be provided in the "hydrostatic" argument.
 
          - water_depth  : waterdepth (not hydrostatics)
          - body_draft   : draft of body (m)
@@ -394,13 +394,13 @@ class Hyddb1(object):
                 omega = self._mass.omega.values[i_omega]
                 f.write(fixed_format('OMEGA',[omega]))
 
-                # get added mass matrix for this omega
-                ams = self._mass.sel(omega=omega).values
+                ams = self.amass(omega)
+
                 for row in ams:
-                    f.write(fixed_format('ADMASS', row))
+                    f.write(fixed_format('ADMAS', row))
 
                 # get added mass matrix for this omega
-                damp = self._damping.sel(omega=omega).values
+                damp = self.damping(omega)
                 for row in damp:
                     f.write(fixed_format('BDAMP', row))
 
