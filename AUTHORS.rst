@@ -2,4 +2,4 @@
 Contributors
 ============
 
-* ruben beneden <rubenebruin@gmail.com>
+* Ruben de Bruin <rubenebruin@gmail.com>
