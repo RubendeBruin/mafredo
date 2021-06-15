@@ -19,6 +19,14 @@ Units: SI
 
  added mass : mT, mT*m
  damping: kN/(m/s) or kN*m/(rad/s)
+ frequency : rad/s
+
+ headings : degrees counter-clockwise from positive X-axis; going to.
+ For a ship with stern-to-bow aligned with the x-axis this means:
+ - 0 deg = stern waves,
+ - 180 deg = bow waves,
+ - 90 deg = waves from SB
+
 
 Definitions:
 
@@ -61,9 +69,18 @@ The Mass matrix is constructed as follows:
 Loading data:
 
   .load_from_capytaine --> import from capytaine .nc database (netCDF) ; requires capytaine to be installed
+  .load_from_hyd : MARIN .hyd file
 
+
+Setting data manually:
+
+  .set_amass(omega, m6x6)
+  .set_damping(omega, m6x6)
+
+  .set_data
 
 """
+import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 from mafredo.rao import Rao
@@ -84,10 +101,28 @@ class Hyddb1(object):
     def __init__(self):
 
         self._force = []
-        self._mass = xr.Dataset()
-        self._damping = xr.Dataset()
 
-        self._modes = ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']
+        """
+        _mass and _damping are (named) DataArrays with with dimensions 'omega','radiating_dof' and 'influenced_dof'
+        
+        They are initialized to 0 for omega=0
+        
+        """
+        self._mass = xr.DataArray(np.zeros((1,6,6)),
+                                             coords = {"omega" : [0.],
+                                                       "radiating_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw'],
+                                                       "influenced_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']},
+                                             dims = ['omega', 'radiating_dof', 'influenced_dof'],
+                                             )
+
+        self._damping = xr.DataArray(np.zeros((1,6,6)),
+                                     coords = {"omega" : [0.],
+                                               "radiating_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw'],
+                                               "influenced_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']},
+                                     dims = ['omega', 'radiating_dof', 'influenced_dof'],
+                                     )
+
+        self._modes = ('Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw')
 
         self._symmetry = Symmetry.No
 
@@ -187,7 +222,137 @@ class Hyddb1(object):
         self._damping = dataset['radiation_damping'] * self._N_to_kN
         self._mass = dataset['added_mass'] * self._kg_to_mt
 
+    def load_from_hyd(self, filename):
+        """Load from the MARIN .hyd format
 
+        .Hyd files are databases containing both hydrodynamics and hydrostatics.
+        Both are expressed about the same origin.
+        We only read the hydrodynamcis.
+
+        Definition: https://mods.marin.nl/download/attachments/13139976/HYDFILE_Description_Nov_2012.pdf?version=1&modificationDate=1453716460000&api=v2
+
+        Assumptions:
+            Headings are repeated in same order for each omega
+
+        Args:
+            filename: file to read
+        """
+        not_parsed = []
+
+        omegas = []
+        admas = []
+        admasses = []
+        bdamp = []
+        bdamps = []
+        wdirs = []
+
+        famp = []
+        famps = []  # iOmega, iHeading, iMode
+        feps = []
+        fepss = []  # iOmega, iHeading, iMode
+
+        hyd_info = dict()
+
+        with open(filename,'r') as f:
+            for line in f.readlines():
+                line = line.strip('\n') # remove newline characters
+
+                # split into sections with length 10
+                keyword = line[:10]
+
+                if 'IDENT ' in keyword:
+                    not_parsed.append(line)
+                    continue # skip ident lines
+
+                values = [line[10*i+10:10*i+20] for i in range(7)]
+
+                if 'PARA ' in keyword:
+                    n_freq = int(values[0])
+                    n_head = int(values[1])
+                    sym = int(values[2])
+
+                    if sym==0:
+                        self.symmetry = Symmetry.No
+                    elif sym==1:
+                        self.symmetry = Symmetry.XZ
+                    elif sym==2:
+                        self.symmetry = Symmetry.XZ_and_YZ
+                    else:
+                        raise ValueError(f'Unknonwn symmetry value {sym}')
+
+                elif 'REFS ' in keyword:
+                    hyd_info['water_depth'] = float(values[0])
+                    hyd_info['body_draft'] = float(values[1])
+                    hyd_info['waterline'] = float(values[2])
+
+                elif 'SPRING ' in keyword:
+                    hyd_info['disp_m3'] = float(values[0])
+                    hyd_info['Awl_m2'] = float(values[1])
+                    hyd_info['COFX_m'] = float(values[2])
+                    hyd_info['COBX_m'] = float(values[3])
+                    hyd_info['KMT_m'] = float(values[4])
+                    hyd_info['KML_m'] = float(values[5])
+
+                elif 'OMEGA ' in keyword:
+                    omega = float(values[0])
+                    omegas.append(omega)
+                elif 'ADMAS ' in keyword:
+                    admas.append([float(v) for v in values[:6]])
+                    if len(admas) == 6:
+                        admasses.append(np.array(admas, dtype=float))
+                        admas = []
+                elif 'BDAMP ' in keyword:
+                    bdamp.append([float(v) for v in values[:6]])
+                    if len(bdamp) == 6:
+                        bdamps.append(np.array(bdamp, dtype=float))
+                        bdamp = []
+
+                elif 'WDIR ' in keyword:
+                    wdirs.append(float(values[0]))
+
+                elif 'FAMP ' in keyword:
+                    famp.append([float(v) for v in values[:6]])
+
+                    if len(famp) == n_head:
+                        famps.append(np.array(famp, dtype=float))
+                        famp = []
+
+                elif 'FEPS ' in keyword:
+                    feps.append([float(v) for v in values[:6]])
+
+                    if len(feps) == n_head:
+                        fepss.append(np.array(feps, dtype=float))
+                        feps = []
+
+                else:
+                    not_parsed.append(line)
+
+        # now we have
+        # - wdirs
+        # - omegas
+        #
+        # admasses and bdamps [ iOmega, iDof, iDof ]
+        # famps and fepss     [ iOmega, iHeading, iMode ]
+        #
+
+        famps = np.array(famps)
+        fepss = np.array(fepss)
+
+        famps = np.swapaxes(famps, 0, 2) # iMode, iHeading, iOmega
+        fepss = np.swapaxes(fepss, 0, 2)  # iMode, iHeading, iOmega
+
+        # cut headings axis to only the first unique entries
+        wdirs = wdirs[:n_head]
+
+        self.set_data(omega=omegas,
+                      added_mass=admasses,
+                      damping=bdamps,
+                      directions = wdirs,
+                      force_amps = famps,
+                      force_phase_rad = (np.pi/180)*fepss)
+
+        hyd_info['not parsed'] = not_parsed
+        self.hyd_reader_info = hyd_info
 
     def _order_dofs(self, m):
         """M can have a single omega, or multiple"""
@@ -224,6 +389,76 @@ class Hyddb1(object):
         r = self._order_dofs(m)
 
         return r
+
+    def _insert_6x6(self, xarr, omega, m6x6):
+        """Helper for set_mass and set_damping"""
+        if omega in xarr.omega:
+            xarr.loc[{'omega':omega}] = m6x6
+        else:
+            dummy = xarr.isel(omega=0)
+            dummy.values = m6x6
+            dummy.omega.values = float(omega)
+            xarr = xr.concat([xarr, dummy], dim='omega')
+
+        return xarr
+
+    def set_amass(self, omega, m6x6):
+        """Sets the added-mass matrix for a given omega"""
+        self._mass = self._insert_6x6(self._mass, omega, m6x6)
+
+    def set_damping(self, omega, m6x6):
+        """Sets the damping-mass matrix for a given omega"""
+        self._damping = self._insert_6x6(self._damping, omega, m6x6)
+
+    def set_data(self, omega,
+                 added_mass,
+                 damping,
+                 directions,
+                 force_amps,
+                 force_phase_rad
+                 ):
+        """Sets all internal data for added mass, damping and wave-forces.
+
+        Args:
+            omega : common omega vector [rad/s]
+            added_mass : added mass components : [iOmega, iRadating_dof, iInfluenced_dof]
+            damping    : damping components : [iOmega, iRadating_dof, iInfluenced_dof]
+            directions : wave directions for wave-forces [degrees, coming from]
+            force_amps : wave forces [iMode (0..5) , iDirection, iOmega]
+            force_phase_rad : wave force phase in rad [iMode (0..5) , iDirection, iOmega]
+
+        """
+
+        self._mass = xr.DataArray(added_mass,
+                                             coords = {"omega" : omega,
+                                                       "radiating_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw'],
+                                                       "influenced_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']},
+                                             dims = ['omega', 'radiating_dof', 'influenced_dof'],
+                                             )
+
+        self._damping = xr.DataArray(damping,
+                                  coords={"omega": omega,
+                                          "radiating_dof": ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw'],
+                                          "influenced_dof": ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']},
+                                  dims=['omega', 'radiating_dof', 'influenced_dof'],
+                                  )
+
+        self._force = []
+
+        for iMode in range(6):
+            amps = force_amps[iMode]
+            phases = force_phase_rad[iMode]
+
+            rao = Rao()
+            rao.set_data(directions=directions,
+                         omegas=omega,
+                         amplitude=amps,
+                         phase=phases)
+            self._force.append(rao)
+
+
+
+
 
     def damping(self, omega):
         """Returns the damping matrix for given frequency or frequencies.
@@ -420,3 +655,99 @@ class Hyddb1(object):
                                  [0, 0]))
             f.write('END\n')
 
+    def plot(self, adm=True, damp=True, amp=True, phase=True, do_show=True):
+        """Produces a plot of the contents of the database
+
+        Args:
+            adm: plot added mass
+            damp: plot damping
+            amp: plot force amplitudes
+            phase: plot force phases
+            do_show : do plt.show()
+
+        Returns:
+            figure handles
+
+
+        """
+
+        import matplotlib.pyplot as plt
+
+        figs = []
+
+        # --- RAO amplitudes
+
+        if amp:
+
+            fig, axes = plt.subplots(3,2, figsize=(10,15))
+            axes=axes.flatten()
+            for i in range(6):
+                force = self._force[i]
+                force._data['amplitude'].plot(ax=axes[i], cmap=plt.cm.GnBu)
+                axes[i].set_title(self._modes[i])
+            fig.suptitle('Force RAO amplitudes')
+
+            figs.append(fig)
+
+        # --- RAO phass
+
+        if phase:
+
+            fig, axes = plt.subplots(3,2, figsize=(10,15))
+            axes=axes.flatten()
+            for i in range(6):
+                force = self._force[i]
+                force._data['phase'].plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
+                axes[i].set_title(self._modes[i])
+            fig.suptitle('Force RAO phase [rad]')
+
+            figs.append(fig)
+
+        # Added mass
+
+        if adm:
+            fig, axes = plt.subplots(3, 2, figsize=(10, 15))
+            axes = axes.flatten()
+            for i in range(6):
+
+                mode = self._modes[i]
+
+                for other in self._modes:
+                    if mode==other:
+                        lw = 2
+                    else:
+                        lw = 1
+                    self._mass.sel(radiating_dof=mode, influenced_dof=other).plot(ax=axes[i], lw=lw, label = other)
+
+                axes[i].set_title(self._modes[i])
+                if i==5:
+                    axes[i].legend()
+            fig.suptitle('Added mass\nDiagonal terms shown with thicker line')
+
+            figs.append(fig)
+
+        # Damping
+
+        if damp:
+            fig, axes = plt.subplots(3, 2, figsize=(10, 15))
+            axes = axes.flatten()
+            for i in range(6):
+
+                mode = self._modes[i]
+
+                for other in self._modes:
+                    if mode == other:
+                        lw = 2
+                    else:
+                        lw = 1
+                    self._damping.sel(radiating_dof=mode, influenced_dof=other).plot(ax=axes[i], lw=lw, label=other)
+
+                axes[i].set_title(self._modes[i])
+                if i == 5:
+                    axes[i].legend()
+            fig.suptitle('Damping \nDiagonal terms shown with thicker line')
+
+            figs.append(fig)
+
+        if do_show:
+            plt.show()

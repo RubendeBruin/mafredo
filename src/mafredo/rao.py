@@ -10,7 +10,7 @@ The dimensions of the dataset are:
 - omega [rad/s]
 - wave_direction [deg]
 - amplitude [any]
-- phase [radians]
+- phase [radians, lagging]
 
 An attribute "mode" is added which determine which mode is represented (surge/sway/../yaw) and is needed to determine
 how symmetry should be applied (if any). For heave it does not matter whether a wave comes from sb or ps, but for roll it does.
@@ -91,6 +91,34 @@ class Rao(object):
         self._data = self._data.drop_vars('real')
         self._data = self._data.drop_vars('imag')
         self._data.coords['mode'] = mode
+
+    def set_data(self, directions, omegas, amplitude, phase):
+        """Sets the data to the provided values.
+
+        Args:
+            directions : wave directions
+            omegas     : wave frequencies [rad/s]
+            amplitude  : wave fores  [iDirection, iOmega]
+            phase      : wave phases [iDirection, iOmega] in radians
+        """
+
+        """
+        The dimensions of the dataset are:
+- omega [rad/s]
+- wave_direction [deg]
+- amplitude [any]
+- phase [radians]
+        """
+
+        self._data = xr.Dataset({
+            'amplitude': (['wave_direction', 'omega'], amplitude),
+            'phase'    : (['wave_direction', 'omega'], phase),
+                    },
+            coords={'wave_direction': directions,
+                    'omega': omegas,
+                    }
+        )
+
 
     def wave_force_from_capytaine(self, filename, mode):
         """
