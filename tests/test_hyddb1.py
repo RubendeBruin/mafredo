@@ -7,20 +7,17 @@ from mafredo.hyddb1 import Hyddb1
 
 
 def gimme():
-    hyd = Hyddb1()
-    hyd.load_from(r'files/barge_100_30_4.dhyd')
+    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
     return hyd
 
 def test_load_dhyd():
-    hyd = Hyddb1()
-    hyd.load_from(r'files/barge_100_30_4.dhyd')
+    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
     hyd.plot()
 
     print(hyd._mass)
 
 def test_load_nc():
-    hyd = Hyddb1()
-    hyd.load_from_capytaine(r"files/capytaine.nc")
+    hyd = Hyddb1.create_from_capytaine(r"files/capytaine.nc")
 
     omega = 0.01
 
@@ -78,7 +75,6 @@ def test_add_damping():
     assert_almost_equal(actual03, expected)
 
 def test_read_hyd():
-    hyd = Hyddb1()
-    hyd.load_from_hyd(r'files/barge.hyd')
+    hyd = Hyddb1.create_from_hyd(r'files/barge.hyd')
 
-    hyd.plot()
+    hyd.plot(do_show=False)

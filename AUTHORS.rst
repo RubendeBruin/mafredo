@@ -2,4 +2,4 @@
 Contributors
 ============
 
-* Ruben de Bruin <rubenebruin@gmail.com>
+* Ruben de Bruin <rubendebruin@gmail.com>

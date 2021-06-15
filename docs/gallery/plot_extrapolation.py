@@ -1,12 +1,18 @@
-# Example of extrapolation of values
+"""
+Example of extrapolation of values
 
-from mafredo import hyddb1, rao
+** This is not the easiest way to do this **
+
+"""
+
+
+
+from mafredo import *
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 
-hyd = hyddb1.Hyddb1()
-hyd.load_from_capytaine(r"capytaine.nc")
+hyd = Hyddb1.create_from_capytaine(r"capytaine.nc")
 
 rao = hyd.force_rao(0)
 

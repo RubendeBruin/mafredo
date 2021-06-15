@@ -10,20 +10,18 @@ The purpose of this package is not to provide yet another format for storing hyd
 
 The purpose is to provide an easier way to store, visualize, exchange, compare and modify this data.
 
-
-
-
 Contents
 ========
 
 .. toctree::
    :maxdepth: 2
 
+   readme
    conventions
+   Hyddb1
+   auto_gallery/index.rst
 
-   Overview <readme>
    License <license>
-   Authors <authors>
    Changelog <changelog>
    Module Reference <api/modules>
 

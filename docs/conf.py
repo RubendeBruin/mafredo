@@ -79,7 +79,13 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "recommonmark",
+    'sphinx_gallery.gen_gallery',
 ]
+
+sphinx_gallery_conf = {
+     'examples_dirs': './gallery',   # path to your example scripts
+     'gallery_dirs': 'auto_gallery',  # path to where to save gallery generated output
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

@@ -1,85 +1,4 @@
-"""
-Hydrodynamic Database 1st Order
-================================
 
-This class contains all information for first order floating bodies. That is:
-
-- Added mass
-- Damping
-- Wave-forces
-
-Typically all of the above are obtained from BEM package such as capytaine, wamit, diffrac, orcawave, etc.
-
-Added-mass and damping are 6x6 matrices and are a function of frequency
-Wave-forces are a function of heading, mode and frequency.
-
-The frequency grid for added-mass, damping and wave-forces may be the same, but this is not enforced.
-
-Units: SI
-
- added mass : mT, mT*m
- damping: kN/(m/s) or kN*m/(rad/s)
- frequency : rad/s
-
- headings : degrees counter-clockwise from positive X-axis; going to.
- For a ship with stern-to-bow aligned with the x-axis this means:
- - 0 deg = stern waves,
- - 180 deg = bow waves,
- - 90 deg = waves from SB
-
-
-Definitions:
-
-    Phase angles: "Lagging relative to wave crest"
-
-    pseudo code:
-
-        A = -(omega ** 2) * M_total  \
-                + 1j * omega * B  \
-                + K               # mass, damping, stiffness
-        re = np.real(Fwave)
-        im = np.imag(Fwave)
-        excitation = re - 1j * im
-
-        rao = np.linalg.solve(A, excitation )
-
-        # calculate in time-domain:
-
-        time_phasor = np.exp(1j * t)
-        motions = np.outer(time_phasor, rao)
-        response = np.real(motions)
-        wave_elevation = wave_amplitude * np.real(time_phasor)
-
-Symmetry:
-
-
-Getting data:
-
- .force -> gives force RAOs
- .damping -> gives damping matrix
- .amass -> gives added mass matrix
-
-Matrix definitions:
-
-The Mass matrix is constructed as follows:
- M(i,j) is the force or moment that results in dof_i as result of a unit acceleration of dof_j
-  i = influenced dof
-  j = exited dof
-
-Loading data:
-
-  .load_from_capytaine --> import from capytaine .nc database (netCDF) ; requires capytaine to be installed
-  .load_from_hyd : MARIN .hyd file
-
-
-Setting data manually:
-
-  .set_amass(omega, m6x6)
-  .set_damping(omega, m6x6)
-
-  .set_data
-
-"""
 import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
@@ -97,6 +16,68 @@ class Symmetry(Enum):
 
 
 class Hyddb1(object):
+    """
+    Hydrodynamic Database 1st Order
+    ================================
+
+    This class contains all information for first order floating bodies. That is:
+
+    - Added mass
+    - Damping
+    - Wave-forces
+
+    Typically all of the above are obtained from BEM package such as capytaine, wamit, diffrac, orcawave, etc.
+
+    Getting data in
+
+
+    The following methods exist for loading data from supported formats:
+
+    Load from mafredo's own format (netcdf)
+
+    .. method:: create_from
+
+    Load from capytaine
+
+    .. method:: create_from_capytaine
+
+    Load from MARIN .hyd file
+
+    .. method:: create_from_hyd
+
+    From data
+
+    .. method:: create_from_data(everything)
+
+    .. method:: set_data(everything)
+    .. method:: set_amass(omega, m6x6)
+    .. method:: set_damping(omega, m6x6)
+
+
+    Plotting
+
+    .. method:: plot
+
+
+    Getting data out
+
+    It is possible to obtain the data directly from the _mass , _damping and _force xarrays.
+    But my be easier to use one of the following instead:
+
+    .. method:: force
+    .. method:: damping
+    .. method:: amass
+
+
+    Saving to file
+
+    To .hyd format, hydrostatics to be supplied optionally
+
+    .. method:: to_hyd_file
+
+
+
+    """
 
     def __init__(self):
 
@@ -180,25 +161,31 @@ class Hyddb1(object):
         for i in range(6):
             self._force[i].to_xarray_nocomplex().to_netcdf(filename, mode="a", group=self._modes[i])
 
-    def load_from(self, filename):
+    @staticmethod
+    def create_from(filename):
         """Loads hydrodynamic data from a netcdf4 file, for example one as saved using save_as.
 
         See Also:
             save_as
         """
+        R = Hyddb1()
+
         with xr.open_dataarray(filename, group="mass", engine='netcdf4') as ds:
-            self._mass = ds
+            R._mass = ds
         with xr.open_dataarray(filename, group="damping", engine='netcdf4') as ds:
-            self._damping = ds
+            R._damping = ds
 
-        self._force = list()
+        R._force = list()
         for i in range(6):
-            with xr.open_dataset(filename, group=self._modes[i], engine='netcdf4') as ds:
+            with xr.open_dataset(filename, group=R._modes[i], engine='netcdf4') as ds:
                 r = Rao()
-                r.from_xarray_nocomplex(ds, self._modes[i])
-                self._force.append(r)
+                r.from_xarray_nocomplex(ds, R._modes[i])
+                R._force.append(r)
 
-    def load_from_capytaine(self, filename):
+        return R
+
+    @staticmethod
+    def create_from_capytaine(filename):
         """Loads hydrodynamic data from a  dataset produced with capytaine.
 
         - Wave forces,
@@ -208,21 +195,26 @@ class Hyddb1(object):
         See Also:
             Rao.wave_force_from_capytaine
         """
+        R = Hyddb1()
+
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
         dataset['wave_direction'] *= 180 / np.pi  # convert rad/s to deg
 
-        self._force.clear()
-        for mode in self._modes:
+        R._force.clear()
+        for mode in R._modes:
             r = Rao()
             r.wave_force_from_capytaine(filename, mode)
-            r.scale(self._N_to_kN)
-            self._force.append(r)
+            r.scale(R._N_to_kN)
+            R._force.append(r)
 
-        self._damping = dataset['radiation_damping'] * self._N_to_kN
-        self._mass = dataset['added_mass'] * self._kg_to_mt
+        R._damping = dataset['radiation_damping'] * R._N_to_kN
+        R._mass = dataset['added_mass'] * R._kg_to_mt
 
-    def load_from_hyd(self, filename):
+        return R
+
+    @staticmethod
+    def create_from_hyd(filename):
         """Load from the MARIN .hyd format
 
         .Hyd files are databases containing both hydrodynamics and hydrostatics.
@@ -253,6 +245,8 @@ class Hyddb1(object):
 
         hyd_info = dict()
 
+        R = Hyddb1()
+
         with open(filename,'r') as f:
             for line in f.readlines():
                 line = line.strip('\n') # remove newline characters
@@ -272,11 +266,11 @@ class Hyddb1(object):
                     sym = int(values[2])
 
                     if sym==0:
-                        self.symmetry = Symmetry.No
+                        R.symmetry = Symmetry.No
                     elif sym==1:
-                        self.symmetry = Symmetry.XZ
+                        R.symmetry = Symmetry.XZ
                     elif sym==2:
-                        self.symmetry = Symmetry.XZ_and_YZ
+                        R.symmetry = Symmetry.XZ_and_YZ
                     else:
                         raise ValueError(f'Unknonwn symmetry value {sym}')
 
@@ -344,7 +338,9 @@ class Hyddb1(object):
         # cut headings axis to only the first unique entries
         wdirs = wdirs[:n_head]
 
-        self.set_data(omega=omegas,
+
+
+        R.set_data(omega=omegas,
                       added_mass=admasses,
                       damping=bdamps,
                       directions = wdirs,
@@ -352,7 +348,9 @@ class Hyddb1(object):
                       force_phase_rad = (np.pi/180)*fepss)
 
         hyd_info['not parsed'] = not_parsed
-        self.hyd_reader_info = hyd_info
+        R.hyd_reader_info = hyd_info
+
+        return R
 
     def _order_dofs(self, m):
         """M can have a single omega, or multiple"""
@@ -410,6 +408,35 @@ class Hyddb1(object):
         """Sets the damping-mass matrix for a given omega"""
         self._damping = self._insert_6x6(self._damping, omega, m6x6)
 
+    @staticmethod
+    def create_from_data(self, omega,
+                 added_mass,
+                 damping,
+                 directions,
+                 force_amps,
+                 force_phase_rad
+                 ):
+        """Creates a new database using the provided data.
+
+        Args:
+            omega : common omega vector [rad/s]
+            added_mass : added mass components : [iOmega, iRadating_dof, iInfluenced_dof]
+            damping    : damping components : [iOmega, iRadating_dof, iInfluenced_dof]
+            directions : wave directions for wave-forces [degrees, coming from]
+            force_amps : wave forces [iMode (0..5) , iDirection, iOmega]
+            force_phase_rad : wave force phase in rad [iMode (0..5) , iDirection, iOmega]
+        """
+
+        r = Hyddb1()
+        r.set_data(omega,
+                 added_mass,
+                 damping,
+                 directions,
+                 force_amps,
+                 force_phase_rad)
+        return r
+
+
     def set_data(self, omega,
                  added_mass,
                  damping,
@@ -427,6 +454,8 @@ class Hyddb1(object):
             force_amps : wave forces [iMode (0..5) , iDirection, iOmega]
             force_phase_rad : wave force phase in rad [iMode (0..5) , iDirection, iOmega]
 
+
+        See Also: create_from_data
         """
 
         self._mass = xr.DataArray(added_mass,

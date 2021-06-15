@@ -4,8 +4,7 @@ from mafredo.rao import Rao
 from mafredo.hyddb1 import Hyddb1
 
 def test_load_dhyd():
-    hyd = Hyddb1()
-    hyd.load_from(r'files/barge_100_30_4.dhyd')
+    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
     rao = hyd._force[0]
 
     assert rao.n_frequencies == 28

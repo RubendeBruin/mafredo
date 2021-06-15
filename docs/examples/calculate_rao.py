@@ -7,7 +7,7 @@ hyd = hyddb1.Hyddb1()
 print('reading data')
 
 # hyd.load_from_capytaine(r"capytaine.nc")
-hyd.load_from(r"c:\data\temp.nc")
+hyd.create_from(r"c:\data\temp.nc")
 
 # Barge is 100m x 30m x 5m draft
 Awl = 100*30

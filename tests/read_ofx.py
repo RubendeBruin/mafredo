@@ -13,7 +13,7 @@ infile.close()
 filename = r'C:\data\python\rao\docs\examples\FPSO'
 hyd = hyddb1.Hyddb1()
 print('reading data')
-hyd.load_from_capytaine(r"{}.nc".format(filename))
+hyd.create_from_capytaine(r"{}.nc".format(filename))
 
 print('test')
 
