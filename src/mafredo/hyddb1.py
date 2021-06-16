@@ -81,7 +81,7 @@ class Hyddb1(object):
 
     def __init__(self):
 
-        self._force = []
+        self._force = [Rao() for i in range(6)]
 
         """
         _mass and _damping are (named) DataArrays with with dimensions 'omega','radiating_dof' and 'influenced_dof'
@@ -384,7 +384,10 @@ class Hyddb1(object):
         """Returns the added mass matrix for given frequency or frequencies.
         Linear interpolated is applied if needed"""
 
-        m = self._mass.interp(omega=omega)
+        if omega not in self._mass.omega:
+            self.add_frequency(omega)
+
+        m = self._mass.sel(omega=omega)
         # r = self._order_dofs(m)
 
         return m.values
@@ -494,8 +497,10 @@ class Hyddb1(object):
         """Returns the damping matrix for given frequency or frequencies.
                 Linear interpolated is applied if needed"""
 
+        if omega not in self._damping.omega:
+            self.add_frequency(omega)
+
         m = self._damping.interp(omega=omega)
-        # r = self._order_dofs(m)
 
         return m.values
 
@@ -728,10 +733,7 @@ class Hyddb1(object):
             for i in range(6):
                 force = self._force[i]
 
-                phase = force._data['complex_unit'].copy()
-                phase.values = np.angle(phase.values)
-
-                phase.plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
+                force._data['phase'].plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
                 axes[i].set_title(self._modes[i])
             fig.suptitle('Force RAO phase [rad]')
 

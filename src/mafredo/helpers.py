@@ -111,7 +111,6 @@ def expand_omega_dim_const(dataset, new_omega):
         new_max['omega'] = max(new_omega)  # change the coordinate
         dataset = xr.concat([dataset, new_max], dim='omega')  # and concat
 
-
     return dataset
 
 

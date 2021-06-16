@@ -18,33 +18,25 @@ def test_extrapolate():
 
 
 def test_extrapolate_on_addedmass():
-    hyd = Hyddb1()
-    hyd.create_from_capytaine(r"files/capytaine.nc")
-    hyd.add_frequencies([0])
+    hyd = Hyddb1.create_from_capytaine(r"files/capytaine.nc")
+    # hyd.add_frequencies([0])
 
     assert not np.any(np.isnan(hyd.amass(0)))
 
 
 def test_extrapolate_on_damping():
-    hyd = Hyddb1()
-    hyd.create_from_capytaine(r"files/capytaine.nc")
-    hyd.add_frequency(0)
+    hyd = Hyddb1.create_from_capytaine(r"files/capytaine.nc")
+    # hyd.add_frequency(0)
     assert not np.any(np.isnan(hyd.damping(0)))
 
 def test_extrapolate_on_force():
-    hyd = Hyddb1()
-    hyd.create_from_capytaine(r"files/capytaine.nc")
+    hyd = Hyddb1.create_from_capytaine(r"files/capytaine.nc")
     hyd.add_frequency(0)
     assert not np.any(np.isnan(hyd.force(0,90)))
 
 def test_extrapolate_on_force_dir():
-    hyd = Hyddb1()
-    hyd.create_from_capytaine(r"files/capytaine.nc")
+    hyd = Hyddb1.create_from_capytaine(r"files/capytaine.nc")
     hyd.add_direction(17)
-    print(hyd.amass(17))
+    assert not np.any(np.isnan(hyd.force(1,17)))  # automatically added
 
-def test_extrapolate_on_damping_dir():
-    hyd = Hyddb1()
-    hyd.create_from_capytaine(r"files/capytaine.nc")
-    hyd.add_frequency(0)
-    print(hyd.damping(0))
+

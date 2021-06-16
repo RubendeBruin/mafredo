@@ -2,6 +2,24 @@
 RAO is a data-object for dealing with RAO-type data being
 amplitude and phase as function of heading and frequency
 
+xarray or numpy arrays
+
+xarray because
+- wavespectra and capytaine use it as well
+- save to file, load from file
+- interpolations, plotting
+but not because
+- handling of phase
+        - but can use internal '_ name'
+        - or even delete after interpolation
+        - or create in a copy (no, not a good idea)
+- frequency in hz/omega
+
+
+
+
+
+
 This class is created to provide methods for the correct interpolation of this type of data which means
 - the amplitude and phase are interpolated separately (interpolation of complex numbers result in incorrect amplitude)
 - continuity in heading is considered (eg: interpolation of heading 355 from heading 345 and 0)
@@ -59,17 +77,39 @@ from mafredo.helpers import expand_omega_dim_const, expand_direction_to_full_ran
 
 __license__ = "mpl2"
 
+# ----- helpers -----
+
+def _complex_unit_add(data):
+    data['complex_unit'] = np.exp(1j * data['phase'])
+
+# def _complex_unit_add_normalize(data):
+#     """Normalized the complex units - needs to be done after interpolation"""
+#     data['complex_unit'] = data['complex_unit'] / abs(data['complex_unit'])
+
+def _complex_unit_delete(data):
+    return data.drop_vars('complex_unit')
+
+def _complex_unit_to_phase(data):
+    data['phase'].values = np.angle(data['complex_unit'].values)
+
+# -----------------
+
 
 class Rao(object):
 
     def __init__(self):
 
-        self._data = xr.Dataset()
-        self._data.coords['mode'] = 'not_set'
+        # dummy
+        self._data = xr.Dataset({
+            'amplitude': (['wave_direction', 'omega'], np.zeros((2,2))),
+            'phase': (['wave_direction', 'omega'], np.zeros((2,2))),
+                    },
+            coords={'wave_direction': [0,180],
+                    'omega': [0,4],
+                    }
+        )
 
-    def _normalize_complex_unit(self):
-        """Normalized the complex units - needs to be done after interpolation"""
-        self._data['complex_unit'] = self._data['complex_unit'] / abs(self._data['complex_unit'])
+        self._data.coords['mode'] = 'not_set'
 
     @property
     def n_frequencies(self):
@@ -90,10 +130,10 @@ class Rao(object):
         """To xarray with complex numbers separated (netCDF compatibility)"""
 
         e = self._data.copy(deep=True)
-        a = self._data['amplitude'] * self._data['complex_unit']
+        a = self._data['amplitude'] * self['complex_unit']
         e['real'] = np.real(a)
         e['imag'] = np.imag(a)
-        e = e.drop_vars('complex_unit')
+        e = e.drop_vars('phase')
         e = e.drop_vars('amplitude')
         return e
 
@@ -102,7 +142,9 @@ class Rao(object):
         self._data = a.copy(deep=True)
         c = a['real'] + 1j * a['imag']
         self._data['amplitude'] = np.abs(c)
-        self._data['complex_unit'] = c / np.abs(c)
+        self._data['phase'] = self._data['amplitude']  # first create dummy copy
+        self._data['phase'].values = np.angle(c)       # then set values
+
         self._data = self._data.drop_vars('real')
         self._data = self._data.drop_vars('imag')
         self._data.coords['mode'] = mode
@@ -127,7 +169,7 @@ class Rao(object):
 
         self._data = xr.Dataset({
             'amplitude': (['wave_direction', 'omega'], amplitude),
-            'complex_unit'    : (['wave_direction', 'omega'], np.exp(1j*phase)),
+            'phase': (['wave_direction', 'omega'], phase),
                     },
             coords={'wave_direction': directions,
                     'omega': omegas,
@@ -165,8 +207,12 @@ class Rao(object):
 
         da = dataset['excitation_force'].sel(influenced_dof = mode)
 
-        self._data['amplitude'] = abs(da)
-        self._data['complex_unit'] = xr.DataArray(da/abs(da), dims=('omega','wave_direction'))
+        self._data = xr.Dataset()
+
+        self._data['amplitude'] = np.abs(da)
+
+        self._data['phase'] = self._data['amplitude']  # To avoid shape mismatch,
+        self._data['phase'].values = np.angle(da)      # first copy with dummy data - then fill
 
         self._data.coords['mode'] = mode
 
@@ -177,14 +223,21 @@ class Rao(object):
         # if so then duplicate the highest or lowest entry to this value
 
         temp = expand_omega_dim_const(self._data, new_omega)
+
+        _complex_unit_add(temp)
         self._data = temp.interp(omega=new_omega, method='linear')
+        _complex_unit_to_phase(self._data)
+        self._data = _complex_unit_delete(self._data)
 
     def regrid_direction(self, new_headings):
         """Regrids the omega axis to new_headings [degrees]. """
 
         # repeat the zero heading at the zero + 360 / -360 as needed
         expanded =  expand_direction_to_full_range(self._data)
+        _complex_unit_add(expanded)
         self._data = expanded.interp(wave_direction=new_headings, method='linear')
+        _complex_unit_to_phase(self._data)
+        self._data = _complex_unit_delete(self._data)
 
     def add_direction(self, wave_direction):
         """Adds the given direction to the RAO by interpolation [deg]"""
@@ -224,7 +277,7 @@ class Rao(object):
         self.add_frequency(omega)           # order of interpolations does not matter
 
         amp =  self._data['amplitude'].sel(wave_direction=wave_direction, omega=omega).values
-        cu = self._data['complex_unit'].sel(wave_direction=wave_direction, omega=omega).values
+        cu = self['complex_unit'].sel(wave_direction=wave_direction, omega=omega).values
 
         return cu * amp
 
@@ -264,15 +317,15 @@ class Rao(object):
             sym.coords['wave_direction'].values = direction_copy
 
             if opposite:
-                sym['complex_unit'] = -sym['complex_unit']
+                sym['phase'] = -sym['phase'] + np.pi
 
             self._data = xr.concat([self._data, sym], dim='wave_direction')
 
         self._data = self._data.sortby('wave_direction')
 
     def __getitem__(self, key):
-        if key == "phase":
-            return xr.DataArray(np.angle(self._data['complex_unit']),dims=('omega','wave_direction'))
+        if key == "complex_unit":
+            return xr.DataArray(np.exp(1j*self._data['phase']),dims=('omega','wave_direction'))
         else:
             return self._data[key]
 

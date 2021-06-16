@@ -30,9 +30,11 @@ def test_n_frequencies():
     assert hyd.n_frequencies == 28
 
 def test_n_frequencies_error():
+    """Check that an error is raised if the RAOs have un-equal frequencies when n_frequencies is requested"""
     hyd = Hyddb1()
+    hyd._force[1].add_frequency(0.176)
     with pytest.raises(ValueError):
-        assert hyd.n_wave_directions == 9
+        assert hyd.n_frequencies == 9
 
 def test_n_wave_directions():
     hyd = gimme()
@@ -46,7 +48,9 @@ def test_wave_directions():
     assert_almost_equal(hyd.wave_directions , [  0.  , 22.5 , 45. ,  67.5,  90.,  112.5, 135. , 157.5 ,180. ])
 
 def test_n_wave_directions_error():
+    """Check that an error is raised if the RAOs have un-equal directions when n_wave_directions is requested"""
     hyd = Hyddb1()
+    hyd._force[1].add_direction(17)
     with pytest.raises(ValueError):
         assert hyd.n_wave_directions == 9
 
