@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 from mafredo.rao import Rao
-from mafredo.helpers import expand_omega_dim_const,expand_direction_to_full_range
+from mafredo.helpers import expand_omega_dim_const,expand_direction_to_full_range, dof_names_to_numbers
 from enum import Enum
 
 class Symmetry(Enum):
@@ -91,15 +91,15 @@ class Hyddb1(object):
         """
         self._mass = xr.DataArray(np.zeros((1,6,6)),
                                              coords = {"omega" : [0.],
-                                                       "radiating_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw'],
-                                                       "influenced_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']},
+                                                       "radiating_dof" : [0,1,2,3,4,5],
+                                                       "influenced_dof" : [0,1,2,3,4,5]},
                                              dims = ['omega', 'radiating_dof', 'influenced_dof'],
                                              )
 
         self._damping = xr.DataArray(np.zeros((1,6,6)),
                                      coords = {"omega" : [0.],
-                                               "radiating_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw'],
-                                               "influenced_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']},
+                                               "radiating_dof" : [0,1,2,3,4,5],
+                                               "influenced_dof" : [0,1,2,3,4,5]},
                                      dims = ['omega', 'radiating_dof', 'influenced_dof'],
                                      )
 
@@ -171,9 +171,9 @@ class Hyddb1(object):
         R = Hyddb1()
 
         with xr.open_dataarray(filename, group="mass", engine='netcdf4') as ds:
-            R._mass = ds
+            R._mass = dof_names_to_numbers(ds)
         with xr.open_dataarray(filename, group="damping", engine='netcdf4') as ds:
-            R._damping = ds
+            R._damping = dof_names_to_numbers(ds)
 
         R._force = list()
         for i in range(6):
@@ -199,7 +199,8 @@ class Hyddb1(object):
 
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
-        dataset['wave_direction'] *= 180 / np.pi  # convert rad/s to deg
+        wave_direction = dataset['wave_direction'] * 180 / np.pi  # convert rad/s to deg
+        dataset.assign_coords(wave_direction=wave_direction)
 
         R._force.clear()
         for mode in R._modes:
@@ -208,8 +209,8 @@ class Hyddb1(object):
             r.scale(R._N_to_kN)
             R._force.append(r)
 
-        R._damping = dataset['radiation_damping'] * R._N_to_kN
-        R._mass = dataset['added_mass'] * R._kg_to_mt
+        R._damping = dof_names_to_numbers(dataset['radiation_damping'] * R._N_to_kN)
+        R._mass = dof_names_to_numbers(dataset['added_mass'] * R._kg_to_mt)
 
         return R
 
@@ -352,31 +353,31 @@ class Hyddb1(object):
 
         return R
 
-    def _order_dofs(self, m):
-        """M can have a single omega, or multiple"""
-
-        try:
-            n_omega = m['omega'].shape[0]
-        except:
-            n_omega = 1
-
-        if n_omega == 1:
-            r = np.zeros((6, 6), dtype=float)
-            for i, m1 in enumerate(self._modes):
-                for j,m2 in enumerate(self._modes):
-                    r[i,j] = m.sel(
-                        influenced_dof=m1, radiating_dof=m2)
-            return r
-        else:
-
-            r = np.zeros((6,6,n_omega))
-
-            for i, m1 in enumerate(self._modes):
-                for j,m2 in enumerate(self._modes):
-                    r[i,j,:] = m.sel(
-                        influenced_dof=m1, radiating_dof=m2)
-
-            return r
+    # def _order_dofs(self, m):
+    #     """M can have a single omega, or multiple"""
+    #
+    #     try:
+    #         n_omega = m['omega'].shape[0]
+    #     except:
+    #         n_omega = 1
+    #
+    #     if n_omega == 1:
+    #         r = np.zeros((6, 6), dtype=float)
+    #         for i, m1 in enumerate(self._modes):
+    #             for j,m2 in enumerate(self._modes):
+    #                 r[i,j] = m.sel(
+    #                     influenced_dof=m1, radiating_dof=m2)
+    #         return r
+    #     else:
+    #
+    #         r = np.zeros((6,6,n_omega))
+    #
+    #         for i, m1 in enumerate(self._modes):
+    #             for j,m2 in enumerate(self._modes):
+    #                 r[i,j,:] = m.sel(
+    #                     influenced_dof=m1, radiating_dof=m2)
+    #
+    #         return r
 
 
     def amass(self, omega):
@@ -384,9 +385,9 @@ class Hyddb1(object):
         Linear interpolated is applied if needed"""
 
         m = self._mass.interp(omega=omega)
-        r = self._order_dofs(m)
+        # r = self._order_dofs(m)
 
-        return r
+        return m.values
 
     def _insert_6x6(self, xarr, omega, m6x6):
         """Helper for set_mass and set_damping"""
@@ -460,15 +461,15 @@ class Hyddb1(object):
 
         self._mass = xr.DataArray(added_mass,
                                              coords = {"omega" : omega,
-                                                       "radiating_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw'],
-                                                       "influenced_dof" : ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']},
+                                                       "radiating_dof" : [0,1,2,3,4,5],
+                                                       "influenced_dof" : [0,1,2,3,4,5]},
                                              dims = ['omega', 'radiating_dof', 'influenced_dof'],
                                              )
 
         self._damping = xr.DataArray(damping,
                                   coords={"omega": omega,
-                                          "radiating_dof": ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw'],
-                                          "influenced_dof": ['Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw']},
+                                          "radiating_dof": [0,1,2,3,4,5],
+                                          "influenced_dof": [0,1,2,3,4,5]},
                                   dims=['omega', 'radiating_dof', 'influenced_dof'],
                                   )
 
@@ -494,9 +495,9 @@ class Hyddb1(object):
                 Linear interpolated is applied if needed"""
 
         m = self._damping.interp(omega=omega)
-        r = self._order_dofs(m)
+        # r = self._order_dofs(m)
 
-        return r
+        return m.values
 
     def force(self, omega, wave_direction):
         """Returns the force vector for given omega/wave-direction"""
@@ -726,7 +727,11 @@ class Hyddb1(object):
             axes=axes.flatten()
             for i in range(6):
                 force = self._force[i]
-                force._data['phase'].plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
+
+                phase = force._data['complex_unit'].copy()
+                phase.values = np.angle(phase.values)
+
+                phase.plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
                 axes[i].set_title(self._modes[i])
             fig.suptitle('Force RAO phase [rad]')
 
@@ -741,12 +746,12 @@ class Hyddb1(object):
 
                 mode = self._modes[i]
 
-                for other in self._modes:
-                    if mode==other:
+                for other in range(6):
+                    if i==other:
                         lw = 2
                     else:
                         lw = 1
-                    self._mass.sel(radiating_dof=mode, influenced_dof=other).plot(ax=axes[i], lw=lw, label = other)
+                    self._mass.sel(radiating_dof=i, influenced_dof=other).plot(ax=axes[i], lw=lw, label = self._modes[other])
 
                 axes[i].set_title(self._modes[i])
                 if i==5:
@@ -764,12 +769,12 @@ class Hyddb1(object):
 
                 mode = self._modes[i]
 
-                for other in self._modes:
-                    if mode == other:
+                for other in range(6):
+                    if i == other:
                         lw = 2
                     else:
                         lw = 1
-                    self._damping.sel(radiating_dof=mode, influenced_dof=other).plot(ax=axes[i], lw=lw, label=other)
+                    self._damping.sel(radiating_dof=i, influenced_dof=other).plot(ax=axes[i], lw=lw, label = self._modes[other])
 
                 axes[i].set_title(self._modes[i])
                 if i == 5:

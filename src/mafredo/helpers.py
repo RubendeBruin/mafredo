@@ -34,6 +34,66 @@ def wavelength(omega, waterdepth = 0):
     x = fsolve(error, 2*np.pi*9.81 / omega**2)
     return x
 
+def dof_names_to_numbers(ds):
+    """Converts the names of the DOFS to numbers. This is unfortunately required to make sure
+    that the order of the dofs makes sense when retrieving added mass or damping matrices."""
+
+    # check if needed
+    if not isinstance(ds.influenced_dof.values[0], int):
+        if isinstance(ds.radiating_dof.values[0], int):
+            # already done
+            return ds
+
+    # re-name and order
+
+    def names_to_ind(dof_names):
+        dof_names[dof_names == 'Surge'] = 0
+        dof_names[dof_names == 'Sway'] = 1
+        dof_names[dof_names == 'Heave'] = 2
+        dof_names[dof_names == 'Roll'] = 3
+        dof_names[dof_names == 'Pitch'] = 4
+        dof_names[dof_names == 'Yaw'] = 5
+        return dof_names
+
+    dof_names = names_to_ind(ds.influenced_dof.values)
+    ds = ds.assign_coords(influenced_dof=dof_names)
+
+    dof_names = names_to_ind(ds.radiating_dof.values)
+    ds = ds.assign_coords(radiating_dof=dof_names)
+
+    ds = ds.sortby('radiating_dof')
+    ds = ds.sortby('influenced_dof')
+
+    return ds
+
+def fix_order_dofs(m):
+    """M can have a single omega, or multiple"""
+
+    modes = ('Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw')
+
+    try:
+        n_omega = m['omega'].shape[0]
+    except:
+        n_omega = 1
+
+    if n_omega == 1:
+        r = np.zeros((6, 6), dtype=float)
+        for i, m1 in enumerate(modes):
+            for j,m2 in enumerate(modes):
+                r[i,j] = m.sel(
+                    influenced_dof=m1, radiating_dof=m2)
+        return r
+    else:
+
+        r = np.zeros((6,6,n_omega))
+
+        for i, m1 in enumerate(modes):
+            for j,m2 in enumerate(modes):
+                r[i,j,:] = m.sel(
+                    influenced_dof=m1, radiating_dof=m2)
+
+        return r
+
 def expand_omega_dim_const(dataset, new_omega):
     """Expands the omega axis of dataset to cover the range of new_omega. Extrapolation is done by repeating the nearest values (ie: keep constant)
 

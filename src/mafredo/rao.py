@@ -10,12 +10,24 @@ The dimensions of the dataset are:
 - omega [rad/s]
 - wave_direction [deg]
 - amplitude [any]
-- phase [radians, lagging]
+- phase(*) [radians, lagging]
+
+**Note**
+For ease of interpolation the phase is stored internally as "complex_unit" which equals exp(1j*phase). This is a complex
+number with angle (phase) and amplitude 1. The relation bewteen these two is:
+
+>>> phase = np.angle(cu)
+>>> cu = np.exp(phase *1j)
+
+To create a xarray:
+>>> phase = force._data['complex_unit'].copy()
+>>> phase.values = np.angle(phase.values)
+
 
 An attribute "mode" is added which determine which mode is represented (surge/sway/../yaw) and is needed to determine
 how symmetry should be applied (if any). For heave it does not matter whether a wave comes from sb or ps, but for roll it does.
 
-The amplitude and phase can be anything. But typically would be one of the following:
+The amplitude and phase can physically be anything. But typically would be one of the following:
 - A motion RAO  (result of frequency domain response calculation)
 - A force or moment RAO (result of diffraction analysis)
 - A response spectrum with relative phase angles (result of a motion RAO combined with a wave-spectrum)
@@ -55,6 +67,9 @@ class Rao(object):
         self._data = xr.Dataset()
         self._data.coords['mode'] = 'not_set'
 
+    def _normalize_complex_unit(self):
+        """Normalized the complex units - needs to be done after interpolation"""
+        self._data['complex_unit'] = self._data['complex_unit'] / abs(self._data['complex_unit'])
 
     @property
     def n_frequencies(self):
@@ -112,7 +127,7 @@ class Rao(object):
 
         self._data = xr.Dataset({
             'amplitude': (['wave_direction', 'omega'], amplitude),
-            'phase'    : (['wave_direction', 'omega'], phase),
+            'complex_unit'    : (['wave_direction', 'omega'], np.exp(1j*phase)),
                     },
             coords={'wave_direction': directions,
                     'omega': omegas,
@@ -141,7 +156,9 @@ class Rao(object):
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
 
-        dataset['wave_direction'] *= 180 / np.pi # convert rad/s to deg
+
+        wave_direction = dataset['wave_direction'] * 180 / np.pi # convert rad/s to deg
+        dataset.assign_coords(wave_direction = wave_direction)
 
         if 'excitation_force' not in dataset:
             dataset['excitation_force'] = dataset['Froude_Krylov_force'] + dataset['diffraction_force']
@@ -162,15 +179,12 @@ class Rao(object):
         temp = expand_omega_dim_const(self._data, new_omega)
         self._data = temp.interp(omega=new_omega, method='linear')
 
-
-
     def regrid_direction(self, new_headings):
         """Regrids the omega axis to new_headings [degrees]. """
 
         # repeat the zero heading at the zero + 360 / -360 as needed
         expanded =  expand_direction_to_full_range(self._data)
         self._data = expanded.interp(wave_direction=new_headings, method='linear')
-
 
     def add_direction(self, wave_direction):
         """Adds the given direction to the RAO by interpolation [deg]"""
