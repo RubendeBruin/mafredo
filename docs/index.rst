@@ -2,13 +2,8 @@
 MaFreDo
 =======
 
-This is the documentation of **MaFreDo**.
+.. include:: ../README.rst
 
-**Ma** rine **Fre** quency **Do** main
-
-The purpose of this package is not to provide yet another format for storing hydrodynamic data.
-
-The purpose is to provide an easier way to store, visualize, exchange, compare and modify this data.
 
 Contents
 ========
@@ -18,9 +13,9 @@ Contents
 
    readme
    conventions
+   Rao
    Hyddb1
    auto_gallery/index.rst
-   notebooks/demo
 
    License <license>
    Changelog <changelog>

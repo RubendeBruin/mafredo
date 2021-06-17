@@ -7,8 +7,7 @@ from numpy.testing import assert_allclose
 
 def test_extrapolate():
 
-    test = Rao()
-    test.wave_force_from_capytaine(r"files/capytaine.nc",MotionMode.ROLL )
+    test = Rao.create_from_capytaine_wave_force(r"files/capytaine.nc", MotionMode.ROLL)
 
     test.add_symmetry_xz()
     test.regrid_omega(np.linspace(0,4,100))

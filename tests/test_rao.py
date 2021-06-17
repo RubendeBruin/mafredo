@@ -1,9 +1,14 @@
 import xarray as xr
 import numpy as np
+from numpy.testing import assert_allclose
 
 from mafredo.helpers import MotionMode
 from mafredo.rao import Rao
 from mafredo.hyddb1 import Hyddb1
+
+def gimme():
+    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+    return hyd._force[0]
 
 def test_load_dhyd():
     hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
@@ -14,8 +19,7 @@ def test_load_dhyd():
 
 def test_Rao_read_nc():
 
-    test = Rao()
-    test.wave_force_from_capytaine(r"files/capytaine.nc", MotionMode.ROLL)
+    test = Rao.create_from_capytaine_wave_force(r"files/capytaine.nc", MotionMode.ROLL)
 
     test.add_symmetry_xz()
     test.regrid_omega(np.linspace(0,4,100))
@@ -24,8 +28,6 @@ def test_Rao_read_nc():
     print(test.get_value(omega = 0.11, wave_direction=30))
 
 def test_rao_set_data():
-
-    test = Rao()
 
     # create some dummy data
     headings = np.arange(0,181,step=45)
@@ -37,4 +39,29 @@ def test_rao_set_data():
     amplitudes = np.random.random((n_headings, n_omegas))
     phases = np.zeros((n_headings, n_omegas))
 
-    test.set_data(headings, omegas, amplitudes, phases)
+    test = Rao.create_from_data(headings, omegas, amplitudes, phases)
+
+def test_load_get_heading():
+    rao = gimme()
+    heading = rao.get_heading(12)
+    # import matplotlib.pyplot as plt
+    # plt.plot(rao.omega, heading)
+    # plt.show()
+
+    assert len(heading) == len(rao.omega)
+
+def test_add_headings():
+    rao = gimme()
+    rao.add_direction([1,2,3,-7])
+    rao.add_direction(3)
+
+def test_get_attributes():
+    rao = gimme()
+
+    _ = rao['amplitude']
+    _ = rao['phase']
+    _ = rao['complex']
+    vals = rao['complex_unit']
+
+    assert_allclose(np.abs(vals.values),1)
+

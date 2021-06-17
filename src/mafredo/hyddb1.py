@@ -172,8 +172,7 @@ class Hyddb1(object):
         R._force = list()
         for mode in MotionMode:
             with xr.open_dataset(filename, group=MotionModeToStr(mode), engine='netcdf4') as ds:
-                r = Rao()
-                r.from_xarray_nocomplex(ds, mode)
+                r = Rao.create_from_xarray_nocomplex(ds, mode)
                 R._force.append(r)
 
         return R
@@ -199,8 +198,7 @@ class Hyddb1(object):
         R._force.clear()
 
         for mode in MotionMode:
-            r = Rao()
-            r.wave_force_from_capytaine(filename, mode)
+            r = Rao.create_from_capytaine_wave_force(filename, mode)
             r.scale(R._N_to_kN)
             R._force.append(r)
 
@@ -477,11 +475,10 @@ class Hyddb1(object):
             amps = force_amps[iMode]
             phases = force_phase_rad[iMode]
 
-            rao = Rao()
-            rao.set_data(directions=directions,
-                         omegas=omega,
-                         amplitude=amps,
-                         phase=phases)
+            rao = Rao.create_from_data(directions=directions,
+                                       omegas=omega,
+                                       amplitude=amps,
+                                       phase=phases)
             self._force.append(rao)
 
 
