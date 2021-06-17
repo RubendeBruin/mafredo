@@ -20,6 +20,7 @@ Contents
    conventions
    Hyddb1
    auto_gallery/index.rst
+   notebooks/demo
 
    License <license>
    Changelog <changelog>

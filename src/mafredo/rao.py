@@ -186,9 +186,8 @@ class Rao(object):
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
 
-
-        wave_direction = dataset['wave_direction'] * 180 / np.pi # convert rad/s to deg
-        dataset.assign_coords(wave_direction = wave_direction)
+        # wave_direction = dataset['wave_direction'] * (180 / np.pi) # convert rad to deg
+        # dataset = dataset.assign_coords(wave_direction = wave_direction)
 
         if 'excitation_force' not in dataset:
             dataset['excitation_force'] = dataset['Froude_Krylov_force'] + dataset['diffraction_force']
@@ -240,8 +239,13 @@ class Rao(object):
     def add_frequency(self, omega):
         """Adds the given frequency to the RAO by interpolation [rad/s]"""
         frequencies = self._data['omega'].values
+        try:
+            len(omega)
+        except:
+            omega = [omega]
+
         if omega not in frequencies:
-            new_omega = np.array((*frequencies, omega), dtype=float)
+            new_omega = np.array((*frequencies, *omega), dtype=float)
             new_omega.sort()
             self.regrid_omega(new_omega)
 

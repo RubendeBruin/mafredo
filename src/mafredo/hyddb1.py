@@ -193,8 +193,8 @@ class Hyddb1(object):
 
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
-        wave_direction = dataset['wave_direction'] * 180 / np.pi  # convert rad/s to deg
-        dataset.assign_coords(wave_direction=wave_direction)
+        # wave_direction = dataset['wave_direction'] * 180 / np.pi  # convert rad/s to deg
+        # dataset = dataset.assign_coords(wave_direction=wave_direction)
 
         R._force.clear()
 
