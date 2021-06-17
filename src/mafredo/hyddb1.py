@@ -3,15 +3,8 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 from mafredo.rao import Rao
-from mafredo.helpers import expand_omega_dim_const,expand_direction_to_full_range, dof_names_to_numbers
-from enum import Enum
+from mafredo.helpers import expand_omega_dim_const,expand_direction_to_full_range, dof_names_to_numbers, MotionMode, Symmetry, MotionModeToStr
 
-class Symmetry(Enum):
-    No = 0
-    XZ = 1
-    YZ = 2
-    XZ_and_YZ = 3
-    Circular = 4
 
 
 
@@ -158,8 +151,9 @@ class Hyddb1(object):
         """
         self._mass.to_netcdf(filename, mode="w", group="mass")
         self._damping.to_netcdf(filename, mode="a", group="damping")
-        for i in range(6):
-            self._force[i].to_xarray_nocomplex().to_netcdf(filename, mode="a", group=self._modes[i])
+
+        for i, mode in enumerate(MotionMode):
+            self._force[i].to_xarray_nocomplex().to_netcdf(filename, mode="a", group=MotionModeToStr(mode))
 
     @staticmethod
     def create_from(filename):
@@ -176,10 +170,10 @@ class Hyddb1(object):
             R._damping = dof_names_to_numbers(ds)
 
         R._force = list()
-        for i in range(6):
-            with xr.open_dataset(filename, group=R._modes[i], engine='netcdf4') as ds:
+        for mode in MotionMode:
+            with xr.open_dataset(filename, group=MotionModeToStr(mode), engine='netcdf4') as ds:
                 r = Rao()
-                r.from_xarray_nocomplex(ds, R._modes[i])
+                r.from_xarray_nocomplex(ds, mode)
                 R._force.append(r)
 
         return R
@@ -203,7 +197,8 @@ class Hyddb1(object):
         dataset.assign_coords(wave_direction=wave_direction)
 
         R._force.clear()
-        for mode in R._modes:
+
+        for mode in MotionMode:
             r = Rao()
             r.wave_force_from_capytaine(filename, mode)
             r.scale(R._N_to_kN)
@@ -513,7 +508,7 @@ class Hyddb1(object):
 
         return r
 
-    def force_rao(self, mode):
+    def force_rao(self, mode : MotionMode):
         """Return a reference to the internal force rao object
 
         Args:

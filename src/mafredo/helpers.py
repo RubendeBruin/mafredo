@@ -1,6 +1,42 @@
 import numpy as np
 import xarray as xr
 from scipy.optimize import fsolve
+from enum import Enum
+
+class Symmetry(Enum):
+    No = 0
+    XZ = 1
+    YZ = 2
+    XZ_and_YZ = 3
+    Circular = 4
+
+class MotionMode(Enum):
+    SURGE = 0
+    SWAY = 1
+    HEAVE = 2
+    ROLL = 3
+    PITCH = 4
+    YAW = 5
+
+def MotionModeToStr(mode: MotionMode) -> str:
+    """These are used in the netcdf databases"""
+
+    if mode == MotionMode.SURGE:
+        cmode = 'Surge'
+    elif mode == MotionMode.SWAY:
+        cmode = 'Sway'
+    elif mode == MotionMode.HEAVE:
+        cmode = 'Heave'
+    elif mode == MotionMode.ROLL:
+        cmode = 'Roll'
+    elif mode == MotionMode.PITCH:
+        cmode = 'Pitch'
+    elif mode == MotionMode.YAW:
+        cmode = 'Yaw'
+    else:
+        raise ValueError('Unknonwn mode')
+
+    return cmode
 
 def wavelength(omega, waterdepth = 0):
     """Returns the wave-length for this frequency [rad/s] and waterdepth.
@@ -66,33 +102,33 @@ def dof_names_to_numbers(ds):
 
     return ds
 
-def fix_order_dofs(m):
-    """M can have a single omega, or multiple"""
-
-    modes = ('Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw')
-
-    try:
-        n_omega = m['omega'].shape[0]
-    except:
-        n_omega = 1
-
-    if n_omega == 1:
-        r = np.zeros((6, 6), dtype=float)
-        for i, m1 in enumerate(modes):
-            for j,m2 in enumerate(modes):
-                r[i,j] = m.sel(
-                    influenced_dof=m1, radiating_dof=m2)
-        return r
-    else:
-
-        r = np.zeros((6,6,n_omega))
-
-        for i, m1 in enumerate(modes):
-            for j,m2 in enumerate(modes):
-                r[i,j,:] = m.sel(
-                    influenced_dof=m1, radiating_dof=m2)
-
-        return r
+# def fix_order_dofs(m):
+#     """M can have a single omega, or multiple"""
+#
+#     modes = ('Surge', 'Sway', 'Heave', 'Roll', 'Pitch', 'Yaw')
+#
+#     try:
+#         n_omega = m['omega'].shape[0]
+#     except:
+#         n_omega = 1
+#
+#     if n_omega == 1:
+#         r = np.zeros((6, 6), dtype=float)
+#         for i, m1 in enumerate(modes):
+#             for j,m2 in enumerate(modes):
+#                 r[i,j] = m.sel(
+#                     influenced_dof=m1, radiating_dof=m2)
+#         return r
+#     else:
+#
+#         r = np.zeros((6,6,n_omega))
+#
+#         for i, m1 in enumerate(modes):
+#             for j,m2 in enumerate(modes):
+#                 r[i,j,:] = m.sel(
+#                     influenced_dof=m1, radiating_dof=m2)
+#
+#         return r
 
 def expand_omega_dim_const(dataset, new_omega):
     """Expands the omega axis of dataset to cover the range of new_omega. Extrapolation is done by repeating the nearest values (ie: keep constant)
@@ -167,7 +203,6 @@ def f10(number, tol=1e-12):
             return (10-len(s))*' '+s
 
     raise ValueError(f'Can not convert number {number} to a string with length 10')
-
 
 if __name__ == "__main__":
     pass

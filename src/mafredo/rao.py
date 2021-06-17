@@ -1,46 +1,15 @@
 """
 RAO is a data-object for dealing with RAO-type data being
-amplitude and phase as function of heading and frequency
+- amplitude [any] and
+- phase [radians]
 
-xarray or numpy arrays
-
-xarray because
-- wavespectra and capytaine use it as well
-- save to file, load from file
-- interpolations, plotting
-but not because
-- handling of phase
-        - but can use internal '_ name'
-        - or even delete after interpolation
-        - or create in a copy (no, not a good idea)
-- frequency in hz/omega
-
-
-
-
-
+as function of
+- heading [degrees]
+- omega [rad/s]
 
 This class is created to provide methods for the correct interpolation of this type of data which means
 - the amplitude and phase are interpolated separately (interpolation of complex numbers result in incorrect amplitude)
 - continuity in heading is considered (eg: interpolation of heading 355 from heading 345 and 0)
-
-The dimensions of the dataset are:
-- omega [rad/s]
-- wave_direction [deg]
-- amplitude [any]
-- phase(*) [radians, lagging]
-
-**Note**
-For ease of interpolation the phase is stored internally as "complex_unit" which equals exp(1j*phase). This is a complex
-number with angle (phase) and amplitude 1. The relation bewteen these two is:
-
->>> phase = np.angle(cu)
->>> cu = np.exp(phase *1j)
-
-To create a xarray:
->>> phase = force._data['complex_unit'].copy()
->>> phase.values = np.angle(phase.values)
-
 
 An attribute "mode" is added which determine which mode is represented (surge/sway/../yaw) and is needed to determine
 how symmetry should be applied (if any). For heave it does not matter whether a wave comes from sb or ps, but for roll it does.
@@ -69,11 +38,26 @@ others:
 
 - anything from xarray. For example myrao['amplitude'].plot() or myrao['amplitude'].sel(wave_direction=180).values
 
+
+**Note**
+For ease of interpolation the phase is stored internally as "complex_unit" which equals exp(1j*phase). This is a complex
+number with angle (phase) and amplitude 1. The relation bewteen these two is:
+
+>>> phase = np.angle(cu)
+>>> cu = np.exp(phase *1j)
+
+The complex unit can be obtained as xarray via the __getattr__ method:
+
+>>> cu = my_rao['complex_unit']
+
+
 """
 
 import xarray as xr
 import numpy as np
 from mafredo.helpers import expand_omega_dim_const, expand_direction_to_full_range
+from mafredo.helpers import MotionMode, Symmetry, MotionModeToStr
+
 
 __license__ = "mpl2"
 
@@ -101,15 +85,15 @@ class Rao(object):
 
         # dummy
         self._data = xr.Dataset({
-            'amplitude': (['wave_direction', 'omega'], np.zeros((2,2))),
-            'phase': (['wave_direction', 'omega'], np.zeros((2,2))),
+            'amplitude': (['wave_direction', 'omega'], np.zeros((2,2),dtype=float)),
+            'phase': (['wave_direction', 'omega'], np.zeros((2,2),dtype=float)),
                     },
             coords={'wave_direction': [0,180],
                     'omega': [0,4],
                     }
         )
 
-        self._data.coords['mode'] = 'not_set'
+        self.mode = None
 
     @property
     def n_frequencies(self):
@@ -137,8 +121,11 @@ class Rao(object):
         e = e.drop_vars('amplitude')
         return e
 
-    def from_xarray_nocomplex(self, a, mode):
+    def from_xarray_nocomplex(self, a, mode : MotionMode):
         """From xarray with complex numbers separated (netCDF compatibility)"""
+
+        assert isinstance(mode, MotionMode), 'mode shall be of MotionMode'
+
         self._data = a.copy(deep=True)
         c = a['real'] + 1j * a['imag']
         self._data['amplitude'] = np.abs(c)
@@ -147,9 +134,9 @@ class Rao(object):
 
         self._data = self._data.drop_vars('real')
         self._data = self._data.drop_vars('imag')
-        self._data.coords['mode'] = mode
+        self.mode = mode
 
-    def set_data(self, directions, omegas, amplitude, phase):
+    def set_data(self, directions, omegas, amplitude, phase, mode = None):
         """Sets the data to the provided values.
 
         Args:
@@ -157,6 +144,7 @@ class Rao(object):
             omegas     : wave frequencies [rad/s]
             amplitude  : wave fores  [iDirection, iOmega]
             phase      : wave phases [iDirection, iOmega] in radians
+            mode       : (None) MotionMode - optional, only mandatory when applying symmetry
         """
 
         """
@@ -177,21 +165,21 @@ class Rao(object):
         )
 
 
-    def wave_force_from_capytaine(self, filename, mode):
+    def wave_force_from_capytaine(self, filename, mode : MotionMode):
         """
         Reads hydrodynamic data from a netCFD file created with capytaine and copies the
         data for the requested mode into the object.
 
         Args:
             filename: .nc file to read from
-            mode: Name of the mode to read ('Heave' 'Pitch' ... 'Sway' 'Yaw')
+            mode: Name of the mode to read MotionMode
 
         Returns:
             None
 
         Examples:
             test = Rao()
-            test.wave_force_from_capytaine(r"capytaine.nc", "Heave")
+            test.wave_force_from_capytaine(r"capytaine.nc", MotionMode.HEAVE)
 
         """
 
@@ -205,7 +193,9 @@ class Rao(object):
         if 'excitation_force' not in dataset:
             dataset['excitation_force'] = dataset['Froude_Krylov_force'] + dataset['diffraction_force']
 
-        da = dataset['excitation_force'].sel(influenced_dof = mode)
+        cmode = MotionModeToStr(mode)
+
+        da = dataset['excitation_force'].sel(influenced_dof = cmode)
 
         self._data = xr.Dataset()
 
@@ -214,7 +204,7 @@ class Rao(object):
         self._data['phase'] = self._data['amplitude']  # To avoid shape mismatch,
         self._data['phase'].values = np.angle(da)      # first copy with dummy data - then fill
 
-        self._data.coords['mode'] = mode
+        self.mode = mode
 
     def regrid_omega(self,new_omega):
         """Regrids the omega axis to new_omega [rad/s] """
@@ -292,18 +282,14 @@ class Rao(object):
 
         """
 
-        try:
-            mode = self._data.coords['mode']
-        except:
-            raise ValueError('Mode coordinate not present - Mode coordinate should be set to surge/sway/...yaw ')
-        mode = mode.item().upper()
 
-        if mode in ['SWAY','ROLL','YAW']:
+
+        if self.mode in (MotionMode.SWAY, MotionMode.ROLL, MotionMode.YAW):  # ['SWAY','ROLL','YAW']:
             opposite = True
-        elif mode in ['SURGE','HEAVE','PITCH']:
+        elif self.mode in (MotionMode.SURGE, MotionMode.HEAVE, MotionMode.PITCH):# ['SURGE','HEAVE','PITCH']:
             opposite = False
         else:
-            raise ValueError('Mode coordinate should be set to surge/sway/...yaw but is set to {}'.format(mode))
+            raise ValueError('Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}'.format(mode))
 
         directions = self._data.coords['wave_direction'].values
 
@@ -325,34 +311,11 @@ class Rao(object):
 
     def __getitem__(self, key):
         if key == "complex_unit":
-            return xr.DataArray(np.exp(1j*self._data['phase']),dims=('omega','wave_direction'))
+            _complex_unit_add(self._data)
+            return self._data['complex_unit']
         else:
             return self._data[key]
 
     def __str__(self):
         return str(self._data)
-
-
-if __name__ == "__main__":
-
-    import matplotlib.pyplot as plt
-
-    test = Rao()
-    test.wave_force_from_capytaine(r"../../tests/files/capytaine.nc", "Roll")
-
-    test.add_symmetry_xz()
-    #
-    test.regrid_omega(np.linspace(0,4,100))
-    test.regrid_direction(np.linspace(0, 360, 36))
-
-    test['amplitude'].plot()
-    #
-    plt.figure()
-    test.add_direction(270)
-    test['amplitude'].sel(wave_direction=270).plot()
-
-    print(test.get_value(omega = 0.11, wave_direction=30))
-
-    plt.show()
-
 

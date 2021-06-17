@@ -1,5 +1,7 @@
 import xarray as xr
 import numpy as np
+
+from mafredo.helpers import MotionMode
 from mafredo.rao import Rao
 from mafredo.hyddb1 import Hyddb1
 
@@ -13,7 +15,7 @@ def test_load_dhyd():
 def test_Rao_read_nc():
 
     test = Rao()
-    test.wave_force_from_capytaine(r"files/capytaine.nc", "Roll")
+    test.wave_force_from_capytaine(r"files/capytaine.nc", MotionMode.ROLL)
 
     test.add_symmetry_xz()
     test.regrid_omega(np.linspace(0,4,100))
@@ -36,7 +38,3 @@ def test_rao_set_data():
     phases = np.zeros((n_headings, n_omegas))
 
     test.set_data(headings, omegas, amplitudes, phases)
-
-    # test._data['amplitude'].plot.contour()
-    # import matplotlib.pyplot as plt
-    # plt.show()
