@@ -374,7 +374,7 @@ class Hyddb1(object):
 
 
     def amass(self, omega):
-        """Returns the added mass matrix for given frequency or frequencies.
+        """Returns the added mass xarray for given frequency or frequencies.
         Linear interpolated is applied if needed"""
 
         if omega not in self._mass.omega:
@@ -383,7 +383,7 @@ class Hyddb1(object):
         m = self._mass.sel(omega=omega)
         # r = self._order_dofs(m)
 
-        return m.values
+        return m
 
     def _insert_6x6(self, xarr, omega, m6x6):
         """Helper for set_mass and set_damping"""
@@ -486,7 +486,7 @@ class Hyddb1(object):
 
 
     def damping(self, omega):
-        """Returns the damping matrix for given frequency or frequencies.
+        """Returns the damping xarray for given frequency or frequencies.
                 Linear interpolated is applied if needed"""
 
         if omega not in self._damping.omega:
@@ -494,7 +494,7 @@ class Hyddb1(object):
 
         m = self._damping.interp(omega=omega)
 
-        return m.values
+        return m
 
     def force(self, omega, wave_direction):
         """Returns the force vector for given omega/wave-direction"""
@@ -544,10 +544,18 @@ class Hyddb1(object):
 
     def add_frequency(self, omega):
         """Adds a frequency to the database by linear interpolation"""
-        self.add_frequencies([omega])
+        self.add_frequencies(omega)
 
     def add_frequencies(self, omegas):
         """Adds more frequencies to the database by linear interpolation"""
+
+        try:
+            len(omegas)
+        except:
+            if omegas in self.frequencies:
+                return
+            else:
+                omegas = [omegas]
 
         omegas = np.array([*omegas, *self.frequencies])
         omegas = np.unique(omegas)
@@ -658,12 +666,12 @@ class Hyddb1(object):
 
                 ams = self.amass(omega)
 
-                for row in ams:
+                for row in ams.values:
                     f.write(fixed_format('ADMAS', row))
 
                 # get added mass matrix for this omega
                 damp = self.damping(omega)
-                for row in damp:
+                for row in damp.values:
                     f.write(fixed_format('BDAMP', row))
 
                 # wave-forces
