@@ -155,6 +155,10 @@ class Hyddb1(object):
         for i, mode in enumerate(MotionMode):
             self._force[i].to_xarray_nocomplex().to_netcdf(filename, mode="a", group=MotionModeToStr(mode))
 
+        info = xr.DataArray()
+        info['symmetry'] = self.symmetry.value
+        info.to_netcdf(filename, mode="a", group="info")
+
     @staticmethod
     def create_from(filename):
         """Loads hydrodynamic data from a netcdf4 file, for example one as saved using save_as.
@@ -174,6 +178,31 @@ class Hyddb1(object):
             with xr.open_dataset(filename, group=MotionModeToStr(mode), engine='netcdf4') as ds:
                 r = Rao.create_from_xarray_nocomplex(ds, mode)
                 R._force.append(r)
+
+        # try read info
+        try:
+            with xr.open_dataset(filename, group="info", engine='netcdf4') as ds:
+                isym = ds['symmetry']
+                R.symmetry = Symmetry(isym)
+        except:
+            # try to guess symmetry
+            from warnings import warn
+
+            if R.n_wave_directions == 1:
+                R.symmetry = Symmetry.Circular
+                warn(f'Guessing symmetry for {filename} to be Circular because only one heading is present')
+            else:
+                max_dir = np.max(R.wave_directions)
+
+                if max_dir <= 90:
+                    R.symmetry = Symmetry.XZ_and_YZ
+                    warn(f'Guessing symmetry for {filename} to be XZ_and_YZ because maximum heading = {max_dir} deg')
+                elif max_dir <= 180:
+                    R.symmetry = Symmetry.XZ
+                    warn(f'Guessing symmetry for {filename} to be XZ (PS/SB) because maximum heading = {max_dir} deg')
+                else:
+                    R.symmetry = Symmetry.No
+                    warn(f'Guessing no symmetry for {filename} because maximum heading is {max_dir} deg')
 
         return R
 
