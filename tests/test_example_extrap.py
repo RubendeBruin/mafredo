@@ -24,7 +24,7 @@ def test_example():
     plt.title('Added more frequencies')
 
 
-    rao.add_symmetry_xz()
+    rao.expand_symmetry_xz()
 
     plt.figure()
     rao['amplitude'].plot()

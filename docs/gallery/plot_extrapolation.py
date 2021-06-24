@@ -21,26 +21,27 @@ plt.title('input')
 
 # add resolution in omega direction
 
-omegas = np.linspace(0,10,100)
+omegas = np.linspace(0,4,100)
 for omega in omegas:
     rao.add_frequency(omega)
 
 # add symmetry
 plt.figure()
 rao['amplitude'].plot()
-plt.title('Added more frequencies')
+plt.title('Re-grid frequencies')
 
-
-rao.add_symmetry_xz()
+rao.expand_symmetry_xz()
 
 plt.figure()
 rao['amplitude'].plot()
 plt.title('Added symmetry')
-
 
 # regrid directions
 plt.figure()
 rao.regrid_direction(np.linspace(0,360,80))
 rao['amplitude'].plot()
 plt.title('Regridded directions')
+
+import matplotlib.pyplot as plt
+plt.show()
 

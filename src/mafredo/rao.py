@@ -229,8 +229,8 @@ class Rao(object):
         from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
 
-        # wave_direction = dataset['wave_direction'] * (180 / np.pi) # convert rad to deg
-        # dataset = dataset.assign_coords(wave_direction = wave_direction)
+        wave_direction = dataset['wave_direction'] * (180 / np.pi) # convert rad to deg
+        dataset = dataset.assign_coords(wave_direction = wave_direction)
 
         if 'excitation_force' not in dataset:
             dataset['excitation_force'] = dataset['Froude_Krylov_force'] + dataset['diffraction_force']
@@ -343,7 +343,7 @@ class Rao(object):
         return cu * amp
 
 
-    def add_symmetry_xz(self):
+    def expand_symmetry_xz(self):
         """Appends equivalent headings considering xz symmetry to the dataset.
 
         That is:
@@ -352,15 +352,12 @@ class Rao(object):
         except that for sway, roll and yaw a sign change will be applied (phase shift of pi)
 
         """
-
-
-
         if self.mode in (MotionMode.SWAY, MotionMode.ROLL, MotionMode.YAW):  # ['SWAY','ROLL','YAW']:
             opposite = True
         elif self.mode in (MotionMode.SURGE, MotionMode.HEAVE, MotionMode.PITCH):# ['SURGE','HEAVE','PITCH']:
             opposite = False
         else:
-            raise ValueError('Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}'.format(mode))
+            raise ValueError('Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}'.format(self.mode))
 
         directions = self._data.coords['wave_direction'].values
 
@@ -374,7 +371,41 @@ class Rao(object):
             sym.coords['wave_direction'].values = direction_copy
 
             if opposite:
-                sym['phase'] = -sym['phase'] + np.pi
+                sym['phase'] = np.mod(sym['phase'] + np.pi, 2*np.pi)
+
+            self._data = xr.concat([self._data, sym], dim='wave_direction')
+
+        self._data = self._data.sortby('wave_direction')
+
+    def expand_symmetry_yz(self):
+        """Appends equivalent headings considering yz symmetry to the dataset.
+
+        That is:
+        The RAO for heading = a is identical to the RAO for heading = 180 -a
+
+        except that for surge, pitch and yaw a sign change will be applied (phase shift of pi)
+
+        """
+        if self.mode in (MotionMode.SURGE, MotionMode.PITCH, MotionMode.YAW):
+            opposite = True
+        elif self.mode in (MotionMode.SWAY, MotionMode.HEAVE, MotionMode.ROLL):
+            opposite = False
+        else:
+            raise ValueError('Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}'.format(self.mode))
+
+        directions = self._data.coords['wave_direction'].values
+
+        for direction in directions:
+
+            direction_copy = np.mod(180-direction, 360)
+            if direction_copy in directions:
+                continue
+
+            sym = self._data.sel(wave_direction=direction)
+            sym.coords['wave_direction'].values = direction_copy
+
+            if opposite:
+                sym['phase'] = np.mod(sym['phase'] + np.pi, 2*np.pi)
 
             self._data = xr.concat([self._data, sym], dim='wave_direction')
 

@@ -38,14 +38,16 @@ def test_save_dhyd():
 
     copy = Hyddb1.create_from(file)
 
-    assert_allclose(hyd._mass.values, copy._mass.values, rtol=1e-3, atol=1)
-    assert_allclose(hyd._damping.values, copy._damping.values, rtol=1e-3, atol=1)
+    hyd.assert_allclose_to(copy)
 
-    for i in range(6):
-        F0 = hyd._force[i]
-        Fc = copy._force[i]
-
-        assert_allclose(F0._data.amplitude.values, Fc._data.amplitude.values, rtol=1e-3, atol=1)
+    # assert_allclose(hyd._mass.values, copy._mass.values, rtol=1e-3, atol=1)
+    # assert_allclose(hyd._damping.values, copy._damping.values, rtol=1e-3, atol=1)
+    #
+    # for i in range(6):
+    #     F0 = hyd._force[i]
+    #     Fc = copy._force[i]
+    #
+    #     assert_allclose(F0._data.amplitude.values, Fc._data.amplitude.values, rtol=1e-3, atol=1)
 
 
 def test_n_frequencies():
