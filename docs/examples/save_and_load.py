@@ -9,8 +9,8 @@ hyd = hyddb1.Hyddb1()
 
 print('reading data')
 
-hyd.load_from_capytaine(r"capytaine.nc")
+hyd.create_from_capytaine(r"capytaine.nc")
 hyd.save_as(filename)
 
 h2 = hyddb1.Hyddb1()
-h2.load_from(filename)
+h2.create_from(filename)

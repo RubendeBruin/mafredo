@@ -9,7 +9,7 @@ hyd = hyddb1.Hyddb1()
 
 print('reading data')
 
-hyd.load_from_capytaine(r"{}.nc".format(filename))
+hyd.create_from_capytaine(r"{}.nc".format(filename))
 
 plt.subplots(2,3)
 for i in range(6):

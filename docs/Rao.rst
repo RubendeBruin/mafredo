@@ -1,0 +1,7 @@
+RAO
+======================
+
+
+.. autoclass:: mafredo.Rao
+
+

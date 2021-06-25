@@ -14,3 +14,6 @@ finally:
 mafredo = Marine Frequency Domain
 
 """
+
+from mafredo.hyddb1 import Hyddb1
+from mafredo.rao import Rao
