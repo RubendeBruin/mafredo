@@ -804,7 +804,7 @@ class Hyddb1(object):
 
         self.regrid_omega(omegas)
 
-    def to_hyd_file(self, filename, hydrostatics):
+    def to_hyd_file(self, filename, hydrostatics=None):
         """Export the database to a .hyd file.
 
         The exported file will be a single-body, first order .hyd database.
