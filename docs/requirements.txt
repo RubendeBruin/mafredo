@@ -6,5 +6,6 @@ numpy
 xarray
 #capytaine
 matplotlib
-yaml
+pyyaml
+sphinx-gallery
 # sphinx_rtd_theme
