@@ -31,3 +31,24 @@ Inspired by and build to work with:
 - wavespectra ([https://github.com/wavespectra/wavespectra])
 - DAVE (General marine modeller) [https://open-ocean.org/DAVE]
 
+Install
+========
+
+Any of the following:
+
+- Conda: `conda install mafredo -c conda-forge`
+
+- Mamba: `mamba install mafredo -c conda-forge`
+
+- pip: `pip install mafredo`
+
+Contributions, compliments and complaints
+================================================
+https://github.com/RubendeBruin/mafredo
+
+Docs
+========
+https://mafredo.readthedocs.io/en/latest/
+
+
+
