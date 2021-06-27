@@ -8,4 +8,5 @@ xarray
 matplotlib
 pyyaml
 sphinx-gallery
+scipy
 # sphinx_rtd_theme
