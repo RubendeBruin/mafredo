@@ -21,7 +21,7 @@ degrees of headings.
 from mafredo import Hyddb1
 
 data = Hyddb1.create_from_orcaflex_yml(
-    filename="barge_100x30x4_q1.yml",
+    filename="./barge_100x30x4_q1.yml",
     vessel_type_name="Vessel type1",
     iDraught=0
 )
