@@ -1,10 +1,5 @@
 ﻿%YAML 1.1
 # Type: Model
-# Program: OrcaFlex 11.0f
-# File: C:\Data\DAVE\mafredo\tests\files\barge_100x30x4 - Copy.yml
-# Created: 2:41 PM on 24-Jun-21
-# User: rubendb
-# Machine: L4084
 ---
 General:
   # Units
