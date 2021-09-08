@@ -967,7 +967,10 @@ class Hyddb1(object):
             axes = axes.flatten()
             for i in range(6):
                 force = self._force[i]
-                force._data["amplitude"].plot(ax=axes[i], cmap=plt.cm.GnBu)
+                if force.n_wave_directions > 1:
+                    force._data["amplitude"].plot(ax=axes[i], cmap=plt.cm.GnBu)
+                else:
+                    force._data["amplitude"].plot(ax=axes[i])
                 axes[i].set_title(self._modes[i])
             fig.suptitle("Force RAO amplitudes")
 
@@ -981,8 +984,10 @@ class Hyddb1(object):
             axes = axes.flatten()
             for i in range(6):
                 force = self._force[i]
-
-                force._data["phase"].plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
+                if force.n_wave_directions > 1:
+                    force._data["phase"].plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
+                else:
+                    force._data["phase"].plot(ax=axes[i])
                 axes[i].set_title(self._modes[i])
             fig.suptitle("Force RAO phase [rad]")
 

@@ -244,7 +244,7 @@ class Rao(object):
         r._data['amplitude'] = np.abs(da)
 
         r._data['phase'] = r._data['amplitude']  # To avoid shape mismatch,
-        r._data['phase'].values = np.angle(da)      # first copy with dummy data - then fill
+        r._data['phase'].values = np.angle(da)   # first copy with dummy data - then fill
 
         r.mode = mode
         return r
