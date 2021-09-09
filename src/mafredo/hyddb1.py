@@ -196,6 +196,22 @@ class Hyddb1(object):
 
         self.symmetry = Symmetry.No
 
+    def add(self, other):
+        """Merges the contents of 'other' into the current database. This is done using 'merge' of xarray
+                using its default arguments."""
+
+        assert isinstance(other, Hyddb1), "other needs to be a Hyddb1 object"
+
+        # first perform, then apply
+        newmass = xr.concat([self._mass ,other._mass], dim='omega')
+        newdamping = xr.concat([self._damping ,other._damping], dim='omega')
+
+        for i in range(6):
+            self._force[i].add(other._force[i])
+
+        # no exceptions, apply
+        self._mass = newmass
+        self._damping = newdamping
 
     def save_as(self, filename):
         """Saves the contents of the database using the netcdf format.
@@ -967,7 +983,10 @@ class Hyddb1(object):
             axes = axes.flatten()
             for i in range(6):
                 force = self._force[i]
-                force._data["amplitude"].plot(ax=axes[i], cmap=plt.cm.GnBu)
+                if force.n_wave_directions > 1:
+                    force._data["amplitude"].plot(ax=axes[i], cmap=plt.cm.GnBu)
+                else:
+                    force._data["amplitude"].plot(ax=axes[i])
                 axes[i].set_title(self._modes[i])
             fig.suptitle("Force RAO amplitudes")
 
@@ -981,8 +1000,10 @@ class Hyddb1(object):
             axes = axes.flatten()
             for i in range(6):
                 force = self._force[i]
-
-                force._data["phase"].plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
+                if force.n_wave_directions > 1:
+                    force._data["phase"].plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
+                else:
+                    force._data["phase"].plot(ax=axes[i])
                 axes[i].set_title(self._modes[i])
             fig.suptitle("Force RAO phase [rad]")
 
