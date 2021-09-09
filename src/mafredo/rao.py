@@ -154,6 +154,13 @@ class Rao(object):
         e = e.drop_vars('amplitude')
         return e
 
+    def add(self, other):
+        """Merges the contents of 'other' into the current RAO. This is done using 'merge' of xarray
+        using its default arguments."""
+
+        assert isinstance(other, Rao), "other needs to be a Rao object"
+        self._data = self._data.merge(other._data)
+
     @staticmethod
     def create_from_xarray_nocomplex(a, mode : MotionMode):
         """From xarray with complex numbers separated (netCDF compatibility)"""
