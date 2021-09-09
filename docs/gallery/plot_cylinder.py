@@ -1,6 +1,6 @@
 """
-Read hyd and plot
-==================
+Merge datasets along frequency
+===============================
 
 Example of how to merge refined hydrodynamic databases.
 
