@@ -13,14 +13,19 @@ using xarrays 'concat' method along the omega dimension.
 
 from mafredo import *
 
-# First create the object
-cylinder = Hyddb1.create_from_capytaine('open_cylinder.nc')
-cylinder_refined = Hyddb1.create_from_capytaine('open_cylinder_2.nc')
-cylinder_further_refined = Hyddb1.create_from_capytaine('open_cylinder_3.nc')
+try:
 
-# merge
-cylinder.add(cylinder_refined)
-cylinder.add(cylinder_further_refined)
+    # First create the object
+    cylinder = Hyddb1.create_from_capytaine('open_cylinder.nc')
+    cylinder_refined = Hyddb1.create_from_capytaine('open_cylinder_2.nc')
+    cylinder_further_refined = Hyddb1.create_from_capytaine('open_cylinder_3.nc')
 
-# and finally plot
-cylinder.plot()
+    # merge
+    cylinder.add(cylinder_refined)
+    cylinder.add(cylinder_further_refined)
+
+    # and finally plot
+    cylinder.plot()
+
+except:
+    pass # read-the-docs
