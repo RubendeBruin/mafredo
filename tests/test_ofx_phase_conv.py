@@ -1,6 +1,8 @@
 from mafredo import Hyddb1
 import matplotlib.pyplot as plt
 
+from numpy.testing import assert_allclose
+
 def test_read_ofx_conventions():
     lags = Hyddb1.create_from_orcaflex_yml(filename=r'files/refcase_ofx_lags.yml', vessel_type_name='Vessel type1')
     leads = Hyddb1.create_from_orcaflex_yml(filename=r'files/refcase_ofx_leads.yml', vessel_type_name='Vessel type1')
@@ -14,8 +16,9 @@ def test_read_ofx_conventions():
     rao90_leads.regrid_direction(90)
     rao90_leads_zd.regrid_direction(90)
 
-    rao90_lags._data['phase'].plot(marker='*')
-    rao90_leads._data['phase'].plot(marker='o')
-    rao90_leads_zd._data['phase'].plot()
+    assert_allclose(rao90_lags._data['phase'].values, rao90_leads._data['phase'].values)
+    assert_allclose(rao90_leads_zd._data['phase'].values, rao90_lags._data['phase'].values)
 
-    plt.show()
+
+
+
