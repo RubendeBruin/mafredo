@@ -600,6 +600,20 @@ class Hyddb1(object):
         amps = np.array(amps, dtype=float)
         phases = np.array(phases, dtype=float)
 
+
+        # If added mass and damping start with infinite frequency
+        if freqs[0] == np.inf:
+            # remove infinite frequency added mass and damping values
+            freqs = freqs[1:]
+
+            amass_inf = amass[0]
+            damp_inf = damp[0]
+
+            amass = amass[1:]
+            damp = damp[1:]
+
+
+
         # check that the frequencies for wave-forces and added-mass-and-damping are equal
         from numpy.testing import assert_allclose
 
