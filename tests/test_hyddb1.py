@@ -107,3 +107,29 @@ def test_read_hyd():
     hyd = Hyddb1.create_from_hyd(r'files/barge.hyd')
 
     hyd.plot(do_show=False)
+
+def test_interpolate_amass():
+    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+    omegas = np.linspace(0.1, 4, 100)
+
+    hyd.amass(omegas)
+
+def test_interpolate_damping():
+    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+    omegas = np.linspace(0.1, 4, 100)
+
+    hyd.damping(omegas)
+
+def test_interpolate_damping_single():
+    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+    omegas = np.linspace(0.1, 4, 100)
+
+    hyd.damping(0.05)
+
+
+def test_interpolate_forces():
+    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+    omegas = np.linspace(0.1, 4, 100)
+
+    hyd.force(0.3, wave_direction=90)
+    hyd.force(0.301, wave_direction=90)

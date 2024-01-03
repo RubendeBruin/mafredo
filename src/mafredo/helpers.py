@@ -89,6 +89,10 @@ def dof_names_to_numbers(ds):
         dof_names[dof_names == 'Roll'] = 3
         dof_names[dof_names == 'Pitch'] = 4
         dof_names[dof_names == 'Yaw'] = 5
+
+        # change the type to int, else they remain strings which causes errors in selection later on
+        dof_names = dof_names.astype(int)
+
         return dof_names
 
     dof_names = names_to_ind(ds.influenced_dof.values)
