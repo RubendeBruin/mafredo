@@ -661,11 +661,13 @@ class Hyddb1(object):
         """Returns the added mass xarray for given frequency or frequencies.
         Linear interpolated is applied if needed"""
 
-        print(omega)
-        print(self._mass.omega)
+        requested = omega
+        available = self._mass.omega.values
 
-        if omega not in self._mass.omega:
-            self.add_frequency(omega)
+        # check if all requested frequencies are available
+        # add missing frequencies if required
+        if not np.all(np.isin(requested, available)):
+            self.add_frequencies(requested)
 
         m = self._mass.sel(omega=omega)
         # r = self._order_dofs(m)
@@ -765,8 +767,13 @@ class Hyddb1(object):
         """Returns the damping xarray for given frequency or frequencies.
         Linear interpolated is applied if needed"""
 
-        if omega not in self._damping.omega:
-            self.add_frequency(omega)
+        requested = omega
+        available = self._damping.omega.values
+
+        # check if all requested frequencies are available
+        # add missing frequencies if required
+        if not np.all(np.isin(requested, available)):
+            self.add_frequencies(requested)
 
         m = self._damping.interp(omega=omega)
 
