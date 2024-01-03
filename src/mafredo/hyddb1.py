@@ -661,6 +661,9 @@ class Hyddb1(object):
         """Returns the added mass xarray for given frequency or frequencies.
         Linear interpolated is applied if needed"""
 
+        print(omega)
+        print(self._mass.omega)
+
         if omega not in self._mass.omega:
             self.add_frequency(omega)
 
