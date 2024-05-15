@@ -132,6 +132,17 @@ class Hyddb1(object):
         self._kg_to_mt = 1 / 1000
         self._N_to_kN = 1 / 1000
 
+    def copy(self):
+        """Returns a deep copy of the database"""
+        # create a new object and copy the data
+        new = Hyddb1()
+        new._mass = self._mass.copy(deep=True)
+        new._damping = self._damping.copy(deep=True)
+        new._force = [rao.copy() for rao in self._force]
+        new._symmetry = self._symmetry
+        return new
+
+
     @property
     def n_frequencies(self):
         """Returns the number of frequencies of the mass, damping and force.

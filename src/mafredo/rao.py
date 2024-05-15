@@ -125,6 +125,15 @@ class Rao(object):
 
         self.mode = None
 
+    def copy(self):
+        """Returns a deep copy of the object"""
+        # create a new object
+        r = Rao()
+        # copy the data
+        r._data = self._data.copy(deep=True)
+        r.mode = self.mode
+        return r
+
     @property
     def n_frequencies(self):
         """The number of frequencies in the database"""
@@ -335,9 +344,18 @@ class Rao(object):
 
         return cu * amp
 
+    def get_values(self):
+        """Returns all present values in the dataset"""
+        amp =  self._data['amplitude'].values
+        cu = self['complex_unit'].values
+
+        return cu * amp
+
+
+
     def get_heading(self, wave_direction):
-        """Returns the complex at the requested wave direction
-         If the data-point is not yet available in the database, then the corresponding wave-direction
+        """Returns the complex rao values at the requested wave direction
+         If the heading is not yet available in the database, then the corresponding wave-direction
          is added to the grid by linear interpolation.
          """
 
