@@ -1,3 +1,4 @@
+from warnings import warn
 import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
@@ -10,6 +11,8 @@ from mafredo.helpers import (
     Symmetry,
     MotionModeToStr,
 )
+
+
 
 
 class Hyddb1(object):
@@ -259,8 +262,7 @@ class Hyddb1(object):
                 isym = ds["symmetry"]
                 R.symmetry = Symmetry(isym)
         except:
-            # try to guess symmetry
-            from warnings import warn
+
 
             if R.n_wave_directions == 1:
                 R.symmetry = Symmetry.Circular
@@ -285,6 +287,15 @@ class Hyddb1(object):
                     warn(
                         f"Guessing no symmetry for {filename} because maximum heading is {max_dir} deg"
                     )
+
+        # check symmetry and warn if not consistent with headings
+        if R.symmetry == Symmetry.XZ:
+            if np.any(R.wave_directions > 180):
+                warn("Symmetry is set to XZ but headings exceed 180 degrees")
+        elif R.symmetry == Symmetry.No:
+            if np.any(R.wave_directions > 90):
+                if np.all(R.wave_directions <= 180):
+                    warn("Symmetry is not present, but no headings exceeding 180 degrees were found")
 
         return R
 
@@ -778,6 +789,11 @@ class Hyddb1(object):
         m = self._damping.interp(omega=omega)
 
         return m
+
+    def _apply_symmetry_if_needed(self, wave_direction):
+        if self.symmetry == Symmetry.XZ:
+            if wave_direction > 180:
+                self.expand360_using_symmetry()
 
     def force(self, omega, wave_direction):
         """Returns the force vector for given omega/wave-direction"""
