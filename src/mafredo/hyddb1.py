@@ -797,7 +797,7 @@ class Hyddb1(object):
         if not np.all(np.isin(requested, available)):
             self.add_frequencies(requested)
 
-        m = self._damping.interp(omega=omega)
+        m = self._damping.sel(omega=omega)
 
         return m
 
