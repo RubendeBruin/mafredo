@@ -1,3 +1,4 @@
+from warnings import warn
 import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
@@ -10,6 +11,8 @@ from mafredo.helpers import (
     Symmetry,
     MotionModeToStr,
 )
+
+
 
 
 class Hyddb1(object):
@@ -128,6 +131,17 @@ class Hyddb1(object):
 
         self._kg_to_mt = 1 / 1000
         self._N_to_kN = 1 / 1000
+
+    def copy(self):
+        """Returns a deep copy of the database"""
+        # create a new object and copy the data
+        new = Hyddb1()
+        new._mass = self._mass.copy(deep=True)
+        new._damping = self._damping.copy(deep=True)
+        new._force = [rao.copy() for rao in self._force]
+        new._symmetry = self._symmetry
+        return new
+
 
     @property
     def n_frequencies(self):
@@ -259,8 +273,7 @@ class Hyddb1(object):
                 isym = ds["symmetry"]
                 R.symmetry = Symmetry(isym)
         except:
-            # try to guess symmetry
-            from warnings import warn
+
 
             if R.n_wave_directions == 1:
                 R.symmetry = Symmetry.Circular
@@ -285,6 +298,15 @@ class Hyddb1(object):
                     warn(
                         f"Guessing no symmetry for {filename} because maximum heading is {max_dir} deg"
                     )
+
+        # check symmetry and warn if not consistent with headings
+        if R.symmetry == Symmetry.XZ:
+            if np.any(R.wave_directions > 180):
+                warn("Symmetry is set to XZ but headings exceed 180 degrees")
+        elif R.symmetry == Symmetry.No:
+            if np.any(R.wave_directions > 90):
+                if np.all(R.wave_directions <= 180):
+                    warn("Symmetry is not present, but no headings exceeding 180 degrees were found")
 
         return R
 
@@ -775,9 +797,14 @@ class Hyddb1(object):
         if not np.all(np.isin(requested, available)):
             self.add_frequencies(requested)
 
-        m = self._damping.interp(omega=omega)
+        m = self._damping.sel(omega=omega)
 
         return m
+
+    def _apply_symmetry_if_needed(self, wave_direction):
+        if self.symmetry == Symmetry.XZ:
+            if wave_direction > 180:
+                self.expand360_using_symmetry()
 
     def force(self, omega, wave_direction):
         """Returns the force vector for given omega/wave-direction"""

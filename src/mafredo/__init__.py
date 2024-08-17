@@ -15,5 +15,7 @@ mafredo = Marine Frequency Domain
 
 """
 
-from mafredo.hyddb1 import Hyddb1
+from mafredo.hyddb1 import Hyddb1, Symmetry
 from mafredo.rao import Rao
+
+__all__ = ['Hyddb1', 'Symmetry', 'Rao']
