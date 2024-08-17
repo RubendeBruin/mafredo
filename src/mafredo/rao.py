@@ -2,7 +2,7 @@
 
 import xarray as xr
 import numpy as np
-from mafredo.helpers import expand_omega_dim_const, expand_direction_to_full_range
+from mafredo.helpers import expand_omega_dim_const, expand_direction_to_full_range, FrequencyUnit
 from mafredo.helpers import MotionMode, Symmetry, MotionModeToStr
 
 
@@ -89,9 +89,9 @@ class Rao(object):
 
     Plotting:
 
-    For plotting just use xarray:
+    .. method:: plot_amplitude
+    .. method:: plot_phase
 
-    >>> my_rao['ampltiude'].plot()
 
     others:
 
@@ -447,4 +447,68 @@ class Rao(object):
 
     def __str__(self):
         return str(self._data)
+
+
+    def plot_amplitude(self, ax=None, unit=FrequencyUnit.rad_s):
+        """Plots the amplitude"""
+        self.plot('amplitude', ax=ax, unit=unit)
+
+    def plot_phase(self, ax=None, unit=FrequencyUnit.rad_s):
+        """Plots the phase"""
+        self.plot('phase', ax=ax, unit=unit)
+
+    def plot(self, what = 'amplitude', ax=None, unit=FrequencyUnit.rad_s):
+        """Plots the amplitude"""
+        import matplotlib.pyplot as plt
+
+        if ax is None:
+            ax = plt.gca()
+
+        omega = self.omega
+
+        unit_label,x = unit.to_unit(omega)
+
+        headings = self._data['wave_direction'].values
+
+        for i, heading in enumerate(headings):
+            data = self._data[what].sel(wave_direction=heading).values
+            ax.plot(x, data, label='{}'.format(heading))
+
+        if self.n_wave_directions > 1:
+            ax.legend()
+
+        ax.legend()
+
+        ax.set_ylabel('Amplitude')
+        ax.set_xlabel(f'Frequency [{unit_label}]')
+
+    def plot_surface(self, what = 'amplitude', ax=None, unit=FrequencyUnit.rad_s, cmap=None):
+        """Plots amplitude or phase as a surface plot"""
+
+        if self.n_wave_directions == 1:
+            self.plot(what=what, ax=ax, unit=unit)
+
+        if cmap is None: # default colormaps
+            if what == 'amplitude':
+                cmap = 'Greys'
+            else:
+                cmap = 'hsv' # cyclic colormap
+
+        import matplotlib.pyplot as plt
+
+        if ax is None:
+            ax = plt.gca()
+
+        omega = self.omega
+        unit_label,x = unit.to_unit(omega)
+
+        headings = self._data['wave_direction'].values
+
+        data = self._data[what].values
+
+        ax.imshow(data, extent=[min(headings), max(headings), min(x), max(x) ], aspect='auto', cmap=cmap)
+
+        ax.set_xlabel('Heading [deg]')
+        ax.set_ylabel(f'Frequency [{unit_label}]')
+
 

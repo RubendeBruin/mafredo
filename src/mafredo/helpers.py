@@ -3,6 +3,21 @@ import xarray as xr
 from scipy.optimize import fsolve
 from enum import Enum
 
+class FrequencyUnit(Enum):
+    Hz = 0
+    rad_s = 1
+    seconds = 2
+
+    def to_unit(self, omega):
+        if self == FrequencyUnit.Hz:
+            return 'Hz', omega / (2*np.pi)
+        elif self == FrequencyUnit.rad_s:
+            return 'rad/s', omega
+        elif self == FrequencyUnit.seconds:
+            return 's', (2*np.pi) / omega
+        else:
+            raise ValueError('Unknown unit')
+
 class Symmetry(Enum):
     No = 0
     XZ = 1

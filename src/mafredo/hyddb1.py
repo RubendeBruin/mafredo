@@ -10,7 +10,9 @@ from mafredo.helpers import (
     MotionMode,
     Symmetry,
     MotionModeToStr,
+    FrequencyUnit
 )
+
 
 
 
@@ -1006,7 +1008,53 @@ class Hyddb1(object):
             f.write(fixed_format("PARA2", [0, 0]))
             f.write("END\n")
 
-    def plot(self, adm=True, damp=True, amp=True, phase=True, do_show=True):
+    def _plot_amass_or_damping(self, data, ylab, unit : FrequencyUnit):
+
+        fig, axes = plt.subplots(3, 2, figsize=(10, 15))
+        axes = axes.flatten()
+
+        x_label, x = unit.to_unit(self._mass.omega.values)
+
+        for i in range(6):
+
+            for other in range(6):
+                if i == other:
+                    lw = 2
+                else:
+                    lw = 1
+
+                data = self._mass.sel(radiating_dof=i, influenced_dof=other).values
+
+                axes[i].plot(x, data, lw=lw, label=self._modes[other])
+
+            axes[i].set_title(self._modes[i])
+            axes[i].set_xlabel(f'[{x_label}]')
+            axes[i].set_ylabel(ylab)
+            if i == 5:
+                axes[i].legend()
+
+        return fig
+
+
+    def plot_added_mass(self, unit = FrequencyUnit.rad_s):
+        """Plots the added mass matrix"""
+
+        fig = self._plot_amass_or_damping(self._mass, "Added mass", unit)
+
+        fig.suptitle("Added mass\nDiagonal terms shown with thicker line")
+
+        return fig
+
+    def plot_damping(self, unit = FrequencyUnit.rad_s):
+        """Plots the damping matrix"""
+
+        fig = self._plot_amass_or_damping(self._damping, "Damping", unit)
+
+        fig.suptitle("Damping\nDiagonal terms shown with thicker line")
+
+        return fig
+
+    def plot(self, adm=True, damp=True, amp=True, phase=True, do_show=True, unit=FrequencyUnit.rad_s):
         """Produces a plot of the contents of the database
 
         Args:
@@ -1034,10 +1082,7 @@ class Hyddb1(object):
             axes = axes.flatten()
             for i in range(6):
                 force = self._force[i]
-                if force.n_wave_directions > 1:
-                    force._data["amplitude"].plot(ax=axes[i], cmap=plt.cm.GnBu)
-                else:
-                    force._data["amplitude"].plot(ax=axes[i])
+                force.plot_amplitude(ax=axes[i],unit=unit)
                 axes[i].set_title(self._modes[i])
             fig.suptitle("Force RAO amplitudes")
 
@@ -1051,10 +1096,7 @@ class Hyddb1(object):
             axes = axes.flatten()
             for i in range(6):
                 force = self._force[i]
-                if force.n_wave_directions > 1:
-                    force._data["phase"].plot(ax=axes[i], cmap=plt.cm.twilight_shifted)
-                else:
-                    force._data["phase"].plot(ax=axes[i])
+                force.plot_surface('phase',ax=axes[i],unit=unit)
                 axes[i].set_title(self._modes[i])
             fig.suptitle("Force RAO phase [rad]")
 
@@ -1063,51 +1105,13 @@ class Hyddb1(object):
         # Added mass
 
         if adm:
-            fig, axes = plt.subplots(3, 2, figsize=(10, 15))
-            axes = axes.flatten()
-            for i in range(6):
-
-                mode = self._modes[i]
-
-                for other in range(6):
-                    if i == other:
-                        lw = 2
-                    else:
-                        lw = 1
-                    self._mass.sel(radiating_dof=i, influenced_dof=other).plot(
-                        ax=axes[i], lw=lw, label=self._modes[other]
-                    )
-
-                axes[i].set_title(self._modes[i])
-                if i == 5:
-                    axes[i].legend()
-            fig.suptitle("Added mass\nDiagonal terms shown with thicker line")
-
+            fig = self.plot_added_mass(unit=unit)
             figs.append(fig)
 
         # Damping
 
         if damp:
-            fig, axes = plt.subplots(3, 2, figsize=(10, 15))
-            axes = axes.flatten()
-            for i in range(6):
-
-                mode = self._modes[i]
-
-                for other in range(6):
-                    if i == other:
-                        lw = 2
-                    else:
-                        lw = 1
-                    self._damping.sel(radiating_dof=i, influenced_dof=other).plot(
-                        ax=axes[i], lw=lw, label=self._modes[other]
-                    )
-
-                axes[i].set_title(self._modes[i])
-                if i == 5:
-                    axes[i].legend()
-            fig.suptitle("Damping \nDiagonal terms shown with thicker line")
-
+            fig = self.plot_damping(unit=unit)
             figs.append(fig)
 
         if do_show:
