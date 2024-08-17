@@ -17,5 +17,6 @@ mafredo = Marine Frequency Domain
 
 from mafredo.hyddb1 import Hyddb1, Symmetry
 from mafredo.rao import Rao
+from mafredo.helpers import FrequencyUnit, Symmetry, MotionMode
 
-__all__ = ['Hyddb1', 'Symmetry', 'Rao']
+__all__ = ['Hyddb1', 'Symmetry', 'Rao', 'FrequencyUnit', 'Symmetry', 'MotionMode']
