@@ -698,6 +698,32 @@ class Hyddb1(object):
 
         return m
 
+    def amass_at(self, dof1, dof2=None, omega = None):
+        """Returns the added mass for given frequency and dof pair
+        by default dof2 is the same as dof1"""
+
+        if dof2 is None:
+            dof2 = dof1
+
+        if omega is None:
+            m = self._mass
+        else:
+            m = self.amass(omega)
+        return m.sel(radiating_dof=dof1, influenced_dof=dof2).values
+
+    def damping_at(self, dof1, dof2=None, omega = None):
+        """Returns the damping for given frequency and dof pair
+        by default dof2 is the same as dof1"""
+
+        if dof2 is None:
+            dof2 = dof1
+
+        if omega is None:
+            m = self._damping
+        else:
+            m = self.damping(omega)
+        return m.sel(radiating_dof=dof1, influenced_dof=dof2).values
+
     def _insert_6x6(self, xarr, omega, m6x6):
         """Helper for set_mass and set_damping"""
         if omega in xarr.omega:
@@ -823,12 +849,51 @@ class Hyddb1(object):
         Args:
             mode : 0...5 for surge...yaw
         """
+        if isinstance(mode, MotionMode):
+            i = mode.value
+        else:
+            i = mode
 
-        return self._force[mode]
+        return self._force[i]
 
     @property
     def frequencies(self):
+        """Returns the frequencies of the mass, damping and force [rad/s]"""
         return self._mass["omega"].values
+
+    def replace_omegas_by_interpolated_result(self, omegas):
+        """Replaces the values at given omega by the interpolated result of the surrounding values
+        """
+
+        try:
+            len(omegas)
+        except:
+            omegas = [omegas]
+
+        # find the value in self.frequencies that is closest to omega
+        to_be_removed = []
+
+        for omega in omegas:
+
+            closest = np.argmin(np.abs(self.frequencies - omega))
+            closest_omega = self.frequencies[closest]
+
+            if np.abs(closest_omega - omega) >1e-3:
+                warn(f"Closest omega found is {closest_omega} which is more than 1e-3 away from {omega}")
+            to_be_removed.append(closest_omega)
+
+        original_omega = self.frequencies
+        temp_omega = self.frequencies
+
+        # remove values of to_be_removed from temp_omega
+        for omega in to_be_removed:
+            temp_omega = temp_omega[temp_omega != omega]
+
+
+        self.regrid_omega(temp_omega)
+
+        # interpolate the frequency back in
+        self.regrid_omega(original_omega)
 
     def regrid_omega(self, new_omega):
 
