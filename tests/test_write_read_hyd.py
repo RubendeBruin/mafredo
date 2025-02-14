@@ -28,7 +28,7 @@ def test_write_hyd_and_read_it_again():
         F0 = hyd._force[i]
         Fc = copy._force[i]
 
-        assert_allclose(F0._data.amplitude.values, Fc._data.amplitude.values.transpose(), rtol=1e-3, atol=1)
+        assert_allclose(F0._data.amplitude.values, Fc._data.amplitude.values, rtol=1e-3, atol=1)
 
 
     #

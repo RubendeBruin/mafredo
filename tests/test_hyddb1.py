@@ -8,6 +8,11 @@ def gimme():
     hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
     return hyd
 
+def test_check_dimensions():
+    hyd = gimme()
+    hyd._check_dimensions()
+
+
 def test_load_dhyd():
     hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
     hyd.plot()
@@ -23,6 +28,12 @@ def test_load_nc():
     damping = hyd.damping(omega=omega)
     force = hyd.force(omega=omega, wave_direction=90)
 
+
+# def test_save_dhyd_to_no_complex():
+#     hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+#     rao = hyd.force_rao(0)
+#     r = rao.to_xarray_nocomplex()
+#     print(r)
 
 def test_save_dhyd():
     hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')

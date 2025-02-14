@@ -134,6 +134,9 @@ class Hyddb1(object):
         self._kg_to_mt = 1 / 1000
         self._N_to_kN = 1 / 1000
 
+    def __repr__(self):
+        return f"Hydrodynamic database with {self.n_frequencies} frequencies and {self.n_wave_directions} wave directions"
+
     def copy(self):
         """Returns a deep copy of the database"""
         # create a new object and copy the data
@@ -143,6 +146,27 @@ class Hyddb1(object):
         new._force = [rao.copy() for rao in self._force]
         new._symmetry = self._symmetry
         return new
+
+    def _check_dimensions(self):
+        """Checks that the dimensions of mass, damping and force are consistent"""
+        if len(self._mass.omega) != len(self._damping.omega):
+            raise ValueError("Mass and damping have different number of frequencies")
+
+        for i in range(6):
+            if len(self._mass.omega) != len(self._force[i].omega):
+                raise ValueError(f"Mass and force[{i}] have different number of frequencies")
+
+        # check headings
+        if self.n_wave_directions != self._force[0].n_wave_directions:
+            raise ValueError("Force RAOs have different amounts of directions")
+
+        # check dimensions of force rao matrices
+
+        for i in range(6):
+            values = self.force_rao(i).get_values()
+            if values.shape != (self.n_frequencies, self.n_wave_directions):
+                raise ValueError(f"Force RAO[{i}] has wrong shape, expected ({self.n_frequencies},{self.n_wave_directions}), got {values.shape}")
+
 
 
     @property
@@ -310,6 +334,11 @@ class Hyddb1(object):
                 if np.all(R.wave_directions <= 180):
                     warn("Symmetry is not present, but no headings exceeding 180 degrees were found")
 
+        try:
+            R._check_dimensions() # self-check
+        except ValueError as e:
+            warn(f"Error when reading hydrodynamic data from {filename}: {e}")
+
         return R
 
     @staticmethod
@@ -338,6 +367,12 @@ class Hyddb1(object):
 
         R._damping = dof_names_to_numbers(dataset["radiation_damping"] * R._N_to_kN)
         R._mass = dof_names_to_numbers(dataset["added_mass"] * R._kg_to_mt)
+
+        try:
+            R._check_dimensions() # self-check
+        except ValueError as e:
+            warn(f"Error when reading hydrodynamic data from {filename}: {e}")
+
 
         return R
 
@@ -466,6 +501,9 @@ class Hyddb1(object):
         famps = np.swapaxes(famps, 0, 2)  # iMode, iHeading, iOmega
         fepss = np.swapaxes(fepss, 0, 2)  # iMode, iHeading, iOmega
 
+        famps = np.swapaxes(famps, 1, 2)  # iMode, iOmega, iHeading
+        fepss = np.swapaxes(fepss, 1, 2)  # iMode, iOmega, iHeading
+
         # cut headings axis to only the first unique entries
         wdirs = wdirs[:n_head]
 
@@ -480,6 +518,12 @@ class Hyddb1(object):
 
         hyd_info["not parsed"] = not_parsed
         R.hyd_reader_info = hyd_info
+
+        try:
+            R._check_dimensions() # self-check
+        except ValueError as e:
+            warn(f"Error when reading hydrodynamic data from {filename}: {e}")
+
 
         return R
 
@@ -652,6 +696,9 @@ class Hyddb1(object):
         amps = np.swapaxes(amps, 1, 0)
         phases = np.swapaxes(phases, 1, 0)
 
+        amps = np.swapaxes(amps, 1, 2)
+        phases = np.swapaxes(phases, 1, 2)
+
         # convert from strings to float
         amass = np.array(amass, dtype=float)
         damp = np.array(damp, dtype=float)
@@ -677,6 +724,12 @@ class Hyddb1(object):
             R.symmetry = Symmetry.Circular
         else:
             raise ValueError(f"Unsuppored symmetry setting: {vessel_type['Symmetry']}")
+
+        try:
+            R._check_dimensions() # self-check
+        except ValueError as e:
+            warn(f"Error when reading hydrodynamic data from {filename}: {e}")
+
 
         return R
 
@@ -773,8 +826,8 @@ class Hyddb1(object):
             added_mass : added mass components : [iOmega, iRadating_dof, iInfluenced_dof]
             damping    : damping components : [iOmega, iRadating_dof, iInfluenced_dof]
             directions : wave directions for wave-forces [degrees, coming from]
-            force_amps : wave forces [iMode (0..5) , iDirection, iOmega]
-            force_phase_rad : wave force phase in rad [iMode (0..5) , iDirection, iOmega]
+            force_amps : wave forces [iMode (0..5) , iOmega, iDirection]
+            force_phase_rad : wave force phase in rad [iMode (0..5) , iOmega, iDirection]
 
 
         See Also: create_from_data
