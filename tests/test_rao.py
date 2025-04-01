@@ -39,7 +39,7 @@ def test_rao_set_data():
     amplitudes = np.random.random((n_headings, n_omegas))
     phases = np.zeros((n_headings, n_omegas))
 
-    test = Rao.create_from_data(headings, omegas, amplitudes, phases)
+    test = Rao.create_from_data(headings, omegas, amplitudes.T, phases.T)
 
 def test_load_get_heading():
     rao = gimme()

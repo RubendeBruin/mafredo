@@ -159,7 +159,10 @@ class Rao(object):
         a = self._data['amplitude'] * self['complex_unit']
         e['real'] = np.real(a)
         e['imag'] = np.imag(a)
-        e = e.drop_vars('phase')
+
+        if 'complex_unit' in e:
+            e = e.drop_vars('complex_unit')
+
         e = e.drop_vars('amplitude')
         return e
 
@@ -196,24 +199,30 @@ class Rao(object):
         Args:
             directions : wave directions
             omegas     : wave frequencies [rad/s]
-            amplitude  : wave fores  [iDirection, iOmega]
-            phase      : wave phases [iDirection, iOmega] in radians
+            amplitude  : wave fores  [iOmega, iDirection]
+            phase      : wave phases [iOmega, iDirection] in radians
             mode       : (None) MotionMode - optional, only mandatory when applying symmetry
         """
 
         """
         The dimensions of the dataset are:
-- omega [rad/s]
-- wave_direction [deg]
-- amplitude [any]
-- phase [radians]
+        - omega [rad/s]
+        - wave_direction [deg]
+        - amplitude [any]
+        - phase [radians]
         """
+
+        # check that the data is consistent
+        assert len(omegas) == amplitude.shape[0], 'Number of frequencies and amplitude data do not match'
+        assert len(directions) == amplitude.shape[1], 'Number of headings and amplitude data do not match'
+        assert amplitude.shape == phase.shape, 'Amplitude and phase data do not match'
+
 
         r = Rao()
 
         r._data = xr.Dataset({
-            'amplitude': (['wave_direction', 'omega'], amplitude),
-            'phase': (['wave_direction', 'omega'], phase),
+            'amplitude': (['omega','wave_direction'], amplitude),
+            'phase': (['omega','wave_direction'], phase),
                     },
             coords={'wave_direction': directions,
                     'omega': omegas,
@@ -345,7 +354,10 @@ class Rao(object):
         return cu * amp
 
     def get_values(self):
-        """Returns all present values in the dataset"""
+        """Returns all present values in the dataset
+
+        the shape is (n_wave_directions, n_frequencies)
+        """
         amp =  self._data['amplitude'].values
         cu = self['complex_unit'].values
 
