@@ -93,6 +93,11 @@ class Hyddb1(object):
 
     .. method:: save_as
 
+    Serialization
+
+    .. method:: to_dict
+    .. method:: from_dict
+
 
 
     """
@@ -270,6 +275,50 @@ class Hyddb1(object):
         info = xr.DataArray()
         info["symmetry"] = self.symmetry.value
         info.to_netcdf(filename, mode="a", group="info")
+
+    def to_dict(self):
+        """Converts the Hyddb1 to a dictionary representation that can be serialized to JSON.
+        
+        Returns:
+            dict: Dictionary containing all hydrodynamic database data and metadata
+        """
+        data_dict = {
+            'mass': self._mass.to_dict(),
+            'damping': self._damping.to_dict(),
+            'force': [rao.to_dict() for rao in self._force],
+            'symmetry': self._symmetry.value,
+            'modes': self._modes
+        }
+        return data_dict
+
+    @staticmethod
+    def from_dict(data_dict):
+        """Creates a Hyddb1 object from a dictionary representation.
+        
+        Args:
+            data_dict (dict): Dictionary containing hydrodynamic database data and metadata
+            
+        Returns:
+            Hyddb1: New Hyddb1 object with the data from the dictionary
+        """
+        # Create new Hyddb1 object
+        hyd = Hyddb1()
+        
+        # Restore mass and damping data using xarray's from_dict
+        hyd._mass = xr.DataArray.from_dict(data_dict['mass'])
+        hyd._damping = xr.DataArray.from_dict(data_dict['damping'])
+        
+        # Restore force RAOs
+        hyd._force = [Rao.from_dict(rao_dict) for rao_dict in data_dict['force']]
+        
+        # Restore symmetry
+        hyd._symmetry = Symmetry(data_dict['symmetry'])
+        
+        # Restore modes if provided (for backward compatibility)
+        if 'modes' in data_dict:
+            hyd._modes = tuple(data_dict['modes'])
+        
+        return hyd
 
     @staticmethod
     def create_from(filename):
