@@ -71,6 +71,12 @@ class Rao(object):
     .. method:: add_frequency
     .. method:: apply_symmetry_xz
 
+    Serialization:
+
+    .. method:: to_dict
+    .. method:: from_dict
+    .. method:: to_xarray_nocomplex
+
     Properties:
 
     - n_frequencies
@@ -460,6 +466,36 @@ class Rao(object):
     def __str__(self):
         return str(self._data)
 
+    def to_dict(self):
+        """Converts the RAO to a dictionary representation that can be serialized to JSON.
+        
+        Returns:
+            dict: Dictionary containing all RAO data and metadata
+        """
+        data_dict = self._data.to_dict()
+        data_dict['mode'] = self.mode.value if self.mode is not None else None
+        return data_dict
+
+    @staticmethod
+    def from_dict(data_dict):
+        """Creates a RAO object from a dictionary representation.
+        
+        Args:
+            data_dict (dict): Dictionary containing RAO data and metadata
+            
+        Returns:
+            Rao: New RAO object with the data from the dictionary
+        """
+        # Extract mode before creating xarray dataset
+        mode_value = data_dict.pop('mode', None)
+        mode = MotionMode(mode_value) if mode_value is not None else None
+        
+        # Create RAO object and restore xarray dataset
+        rao = Rao()
+        rao._data = xr.Dataset.from_dict(data_dict)
+        rao.mode = mode
+        
+        return rao
 
     def plot_amplitude(self, ax=None, unit=FrequencyUnit.rad_s):
         """Plots the amplitude"""
