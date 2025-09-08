@@ -280,22 +280,22 @@ class Hyddb1(object):
         """
         R = Hyddb1()
 
-        with xr.open_dataarray(filename, group="mass", engine="netcdf4") as ds:
+        with xr.open_dataarray(filename, group="mass", engine="h5netcdf") as ds:
             R._mass = dof_names_to_numbers(ds)
-        with xr.open_dataarray(filename, group="damping", engine="netcdf4") as ds:
+        with xr.open_dataarray(filename, group="damping", engine="h5netcdf") as ds:
             R._damping = dof_names_to_numbers(ds)
 
         R._force = list()
         for mode in MotionMode:
             with xr.open_dataset(
-                filename, group=MotionModeToStr(mode), engine="netcdf4"
+                filename, group=MotionModeToStr(mode), engine="h5netcdf"
             ) as ds:
                 r = Rao.create_from_xarray_nocomplex(ds, mode)
                 R._force.append(r)
 
         # try read info
         try:
-            with xr.open_dataset(filename, group="info", engine="netcdf4") as ds:
+            with xr.open_dataset(filename, group="info", engine="h5netcdf") as ds:
                 isym = ds["symmetry"]
                 R.symmetry = Symmetry(isym)
         except:
