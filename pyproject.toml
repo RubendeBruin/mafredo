@@ -18,8 +18,13 @@ classifiers = [
 
 dependencies = ["numpy", "xarray", "capytaine", "matplotlib", "pyyaml"]
 
-[project.optional-dependencies]
-testing = ["setuptools", "pytest", "pytest-cov"]
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "setuptools>=80.9.0",
+    "setuptools-scm>=9.2.0",
+]
 
 [tool.setuptools]
 zip-safe = false
