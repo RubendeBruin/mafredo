@@ -6,24 +6,17 @@ build-backend = "setuptools.build_meta"
 urls = { Homepage = "https://github.com/RubendeBruin/mafredo", Documentation = "https://open-ocean.org/mafredo" }
 name = "MaFreDo"
 description = "Marine Frequency Domain"
-dynamic = ["version"] # versie komt uit git via setuptools-scm
 readme = { file = "README.rst", content-type = "text/x-rst" }
 authors = [{ name = "Ruben de Bruin", email = "rubenebruin@gmail.com" }]
 license = { text = "MPL-2.0" }
+requires-python = ">=3.10"
+dynamic = ["version"] # versie komt uit git via setuptools-scm
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
 ]
-# requires-python = ">=3.8"
 
-dependencies = [
-    'importlib-metadata; python_version < "3.8"',
-    "numpy",
-    "xarray",
-    "capytaine",
-    "matplotlib",
-    "pyyaml",
-]
+dependencies = ["numpy", "xarray", "capytaine", "matplotlib", "pyyaml"]
 
 [project.optional-dependencies]
 testing = ["setuptools", "pytest", "pytest-cov"]
