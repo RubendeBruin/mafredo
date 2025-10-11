@@ -1,54 +1,71 @@
-**Ma** rine **Fre** quency **Do** main
+# MaFreDo — Marine Frequency Domain
 
 A set of tools for working with frequency domain data for marine applications.
 
-The purpose of this package is not to provide yet another format for storing hydrodynamic data.
+The purpose of this package is **not** to provide yet another format for storing hydrodynamic data.  
+Instead, it aims to offer an easier way to **store, visualize, exchange, compare, and modify** this data.
 
-The purpose is to provide an easier way to store, visualize, exchange, compare and modify this data.
+---
 
-This is done by creating classes for the typical data-types:
+## Overview
 
-- Rao (Raos of any kind)
-- Hyddb1 (First order hydrodynamic database with added mass, damping and wave-forces)
+MaFreDo provides Python classes for common hydrodynamic data types:
 
-These classes supply static methods to create them from supported data-types. For example:
+- **Rao** — Response Amplitude Operators of any kind  
+- **Hyddb1** — First-order hydrodynamic database with added mass, damping, and wave forces
 
->>> my_vessel = Hyddb1.create_from_capytaine(filename = 'titanic.nc')
+Each class includes static constructors to easily load from supported data sources. For example:
 
-modification functions
+```python
+from mafredo import Hyddb1
 
->>> my_vessel.regrid_omega(new_omega)
->>> my_vessel.add_heading(new_heading)
+my_vessel = Hyddb1.create_from_capytaine(filename="titanic.nc")
+```
 
-and export/plot function
+You can then modify, visualize, or export your data:
 
->>> my_vessel.plot()
->>> my_vessel.save_as_hyd('titanic.hyd')
+```python
+my_vessel.regrid_omega(new_omega)
+my_vessel.add_heading(new_heading)
 
-Inspired by and build to work with:
+my_vessel.plot()
+my_vessel.save_as_hyd("titanic.hyd")
+```
 
-- capytaine (BEM) [https://github.com/mancellin/capytaine]
-- wavespectra ([https://github.com/wavespectra/wavespectra])
-- DAVE (General marine modeller) [https://open-ocean.org/DAVE]
+---
 
-Install
-========
+## Built to integrate with
 
-Any of the following:
+- [Capytaine (BEM)](https://github.com/mancellin/capytaine)
+- [Wavespectra](https://github.com/wavespectra/wavespectra)
+- [DAVE – General Marine Modeller](https://open-ocean.org/DAVE)
 
-- Conda: `conda install mafredo -c conda-forge`
+---
 
-- Mamba: `mamba install mafredo -c conda-forge`
+## Installation
 
-- pip: `pip install mafredo`
+You can install MaFreDo using **Conda**, **Mamba**, or **pip**:
 
-Contributions, compliments and complaints
-================================================
-https://github.com/RubendeBruin/mafredo
+```bash
+# Conda
+conda install mafredo -c conda-forge
 
-Docs
-========
-https://mafredo.readthedocs.io/en/latest/
+# Mamba
+mamba install mafredo -c conda-forge
 
+# pip
+pip install mafredo
+```
 
+---
 
+## Documentation
+
+📘 **Docs:** [https://mafredo.readthedocs.io/en/latest/](https://mafredo.readthedocs.io/en/latest/)
+
+---
+
+## Contributing
+
+Contributions, compliments, and complaints are welcome!  
+👉 [https://github.com/RubendeBruin/mafredo](https://github.com/RubendeBruin/mafredo)
