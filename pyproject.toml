@@ -8,12 +8,13 @@ name = "MaFreDo"
 description = "Marine Frequency Domain"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 authors = [{ name = "Ruben de Bruin", email = "rubenebruin@gmail.com" }]
-license = { text = "MPL-2.0" }
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dynamic = ["version"] # versie komt uit git via setuptools-scm
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
 ]
 dependencies = [
     "capytaine>=2.3",
@@ -22,7 +23,6 @@ dependencies = [
     "pyyaml>=6.0.3",
     "xarray>=2025.6.1",
 ]
-
 
 [dependency-groups]
 dev = [
@@ -35,6 +35,7 @@ dev = [
 [tool.setuptools]
 zip-safe = false
 include-package-data = true
+license-files = ["LICENSE"]
 
 [tool.setuptools.package-dir]
 "" = "src"
