@@ -10,11 +10,8 @@ from mafredo.helpers import (
     MotionMode,
     Symmetry,
     MotionModeToStr,
-    FrequencyUnit
+    FrequencyUnit,
 )
-
-
-
 
 
 class Hyddb1(object):
@@ -103,7 +100,6 @@ class Hyddb1(object):
     """
 
     def __init__(self):
-
         self._force = [Rao() for i in range(6)]
 
         """
@@ -159,7 +155,9 @@ class Hyddb1(object):
 
         for i in range(6):
             if len(self._mass.omega) != len(self._force[i].omega):
-                raise ValueError(f"Mass and force[{i}] have different number of frequencies")
+                raise ValueError(
+                    f"Mass and force[{i}] have different number of frequencies"
+                )
 
         # check headings
         if self.n_wave_directions != self._force[0].n_wave_directions:
@@ -170,9 +168,9 @@ class Hyddb1(object):
         for i in range(6):
             values = self.force_rao(i).get_values()
             if values.shape != (self.n_frequencies, self.n_wave_directions):
-                raise ValueError(f"Force RAO[{i}] has wrong shape, expected ({self.n_frequencies},{self.n_wave_directions}), got {values.shape}")
-
-
+                raise ValueError(
+                    f"Force RAO[{i}] has wrong shape, expected ({self.n_frequencies},{self.n_wave_directions}), got {values.shape}"
+                )
 
     @property
     def n_frequencies(self):
@@ -237,19 +235,19 @@ class Hyddb1(object):
         elif self.symmetry == Symmetry.No:
             pass
         else:
-            raise ValueError('Unknown symmetry setting')
+            raise ValueError("Unknown symmetry setting")
 
         self.symmetry = Symmetry.No
 
     def add(self, other):
         """Merges the contents of 'other' into the current database. This is done using 'merge' of xarray
-                using its default arguments."""
+        using its default arguments."""
 
         assert isinstance(other, Hyddb1), "other needs to be a Hyddb1 object"
 
         # first perform, then apply
-        newmass = xr.concat([self._mass ,other._mass], dim='omega')
-        newdamping = xr.concat([self._damping ,other._damping], dim='omega')
+        newmass = xr.concat([self._mass, other._mass], dim="omega")
+        newdamping = xr.concat([self._damping, other._damping], dim="omega")
 
         for i in range(6):
             self._force[i].add(other._force[i])
@@ -278,46 +276,46 @@ class Hyddb1(object):
 
     def to_dict(self):
         """Converts the Hyddb1 to a dictionary representation that can be serialized to JSON.
-        
+
         Returns:
             dict: Dictionary containing all hydrodynamic database data and metadata
         """
         data_dict = {
-            'mass': self._mass.to_dict(),
-            'damping': self._damping.to_dict(),
-            'force': [rao.to_dict() for rao in self._force],
-            'symmetry': self._symmetry.value,
-            'modes': self._modes
+            "mass": self._mass.to_dict(),
+            "damping": self._damping.to_dict(),
+            "force": [rao.to_dict() for rao in self._force],
+            "symmetry": self._symmetry.value,
+            "modes": self._modes,
         }
         return data_dict
 
     @staticmethod
     def from_dict(data_dict):
         """Creates a Hyddb1 object from a dictionary representation.
-        
+
         Args:
             data_dict (dict): Dictionary containing hydrodynamic database data and metadata
-            
+
         Returns:
             Hyddb1: New Hyddb1 object with the data from the dictionary
         """
         # Create new Hyddb1 object
         hyd = Hyddb1()
-        
+
         # Restore mass and damping data using xarray's from_dict
-        hyd._mass = xr.DataArray.from_dict(data_dict['mass'])
-        hyd._damping = xr.DataArray.from_dict(data_dict['damping'])
-        
+        hyd._mass = xr.DataArray.from_dict(data_dict["mass"])
+        hyd._damping = xr.DataArray.from_dict(data_dict["damping"])
+
         # Restore force RAOs
-        hyd._force = [Rao.from_dict(rao_dict) for rao_dict in data_dict['force']]
-        
+        hyd._force = [Rao.from_dict(rao_dict) for rao_dict in data_dict["force"]]
+
         # Restore symmetry
-        hyd._symmetry = Symmetry(data_dict['symmetry'])
-        
+        hyd._symmetry = Symmetry(data_dict["symmetry"])
+
         # Restore modes if provided (for backward compatibility)
-        if 'modes' in data_dict:
-            hyd._modes = tuple(data_dict['modes'])
-        
+        if "modes" in data_dict:
+            hyd._modes = tuple(data_dict["modes"])
+
         return hyd
 
     @staticmethod
@@ -348,8 +346,6 @@ class Hyddb1(object):
                 isym = ds["symmetry"]
                 R.symmetry = Symmetry(isym)
         except:
-
-
             if R.n_wave_directions == 1:
                 R.symmetry = Symmetry.Circular
                 warn(
@@ -381,10 +377,12 @@ class Hyddb1(object):
         elif R.symmetry == Symmetry.No:
             if np.any(R.wave_directions > 90):
                 if np.all(R.wave_directions <= 180):
-                    warn("Symmetry is not present, but no headings exceeding 180 degrees were found")
+                    warn(
+                        "Symmetry is not present, but no headings exceeding 180 degrees were found"
+                    )
 
         try:
-            R._check_dimensions() # self-check
+            R._check_dimensions()  # self-check
         except ValueError as e:
             warn(f"Error when reading hydrodynamic data from {filename}: {e}")
 
@@ -418,10 +416,9 @@ class Hyddb1(object):
         R._mass = dof_names_to_numbers(dataset["added_mass"] * R._kg_to_mt)
 
         try:
-            R._check_dimensions() # self-check
+            R._check_dimensions()  # self-check
         except ValueError as e:
             warn(f"Error when reading hydrodynamic data from {filename}: {e}")
-
 
         return R
 
@@ -569,10 +566,9 @@ class Hyddb1(object):
         R.hyd_reader_info = hyd_info
 
         try:
-            R._check_dimensions() # self-check
+            R._check_dimensions()  # self-check
         except ValueError as e:
             warn(f"Error when reading hydrodynamic data from {filename}: {e}")
-
 
         return R
 
@@ -717,7 +713,6 @@ class Hyddb1(object):
         amps = np.array(amps, dtype=float)
         phases = np.array(phases, dtype=float)
 
-
         # If added mass and damping start with infinite frequency
         if freqs[0] == np.inf:
             # remove infinite frequency added mass and damping values
@@ -729,13 +724,14 @@ class Hyddb1(object):
             amass = amass[1:]
             damp = damp[1:]
 
-
-
         # check that the frequencies for wave-forces and added-mass-and-damping are equal
         from numpy.testing import assert_allclose
 
-        assert_allclose(freqs_wf, freqs), ValueError(
-            "Different frequencies for wave-forces and added-mass-and-damping"
+        (
+            assert_allclose(freqs_wf, freqs),
+            ValueError(
+                "Different frequencies for wave-forces and added-mass-and-damping"
+            ),
         )
 
         # ---------- we have all the data now, reshape and feed ---------
@@ -775,13 +771,11 @@ class Hyddb1(object):
             raise ValueError(f"Unsuppored symmetry setting: {vessel_type['Symmetry']}")
 
         try:
-            R._check_dimensions() # self-check
+            R._check_dimensions()  # self-check
         except ValueError as e:
             warn(f"Error when reading hydrodynamic data from {filename}: {e}")
 
-
         return R
-
 
     def amass(self, omega):
         """Returns the added mass xarray for given frequency or frequencies.
@@ -800,7 +794,7 @@ class Hyddb1(object):
 
         return m
 
-    def amass_at(self, dof1, dof2=None, omega = None):
+    def amass_at(self, dof1, dof2=None, omega=None):
         """Returns the added mass for given frequency and dof pair
         by default dof2 is the same as dof1"""
 
@@ -813,7 +807,7 @@ class Hyddb1(object):
             m = self.amass(omega)
         return m.sel(radiating_dof=dof1, influenced_dof=dof2).values
 
-    def damping_at(self, dof1, dof2=None, omega = None):
+    def damping_at(self, dof1, dof2=None, omega=None):
         """Returns the damping for given frequency and dof pair
         by default dof2 is the same as dof1"""
 
@@ -848,7 +842,7 @@ class Hyddb1(object):
 
     @staticmethod
     def create_from_data(
-        self, omega, added_mass, damping, directions, force_amps, force_phase_rad
+        omega, added_mass, damping, directions, force_amps, force_phase_rad
     ):
         """Creates a new database using the provided data.
 
@@ -914,7 +908,6 @@ class Hyddb1(object):
             rao.mode = MotionMode(iMode)
             self._force.append(rao)
 
-
     def damping(self, omega):
         """Returns the damping xarray for given frequency or frequencies.
         Linear interpolated is applied if needed"""
@@ -945,7 +938,7 @@ class Hyddb1(object):
 
         return r
 
-    def force_rao(self, mode: MotionMode):
+    def force_rao(self, mode: MotionMode | int):
         """Return a reference to the internal force rao object
 
         Args:
@@ -964,8 +957,7 @@ class Hyddb1(object):
         return self._mass["omega"].values
 
     def replace_omegas_by_interpolated_result(self, omegas):
-        """Replaces the values at given omega by the interpolated result of the surrounding values
-        """
+        """Replaces the values at given omega by the interpolated result of the surrounding values"""
 
         try:
             len(omegas)
@@ -976,12 +968,13 @@ class Hyddb1(object):
         to_be_removed = []
 
         for omega in omegas:
-
             closest = np.argmin(np.abs(self.frequencies - omega))
             closest_omega = self.frequencies[closest]
 
-            if np.abs(closest_omega - omega) >1e-3:
-                warn(f"Closest omega found is {closest_omega} which is more than 1e-3 away from {omega}")
+            if np.abs(closest_omega - omega) > 1e-3:
+                warn(
+                    f"Closest omega found is {closest_omega} which is more than 1e-3 away from {omega}"
+                )
             to_be_removed.append(closest_omega)
 
         original_omega = self.frequencies
@@ -991,14 +984,12 @@ class Hyddb1(object):
         for omega in to_be_removed:
             temp_omega = temp_omega[temp_omega != omega]
 
-
         self.regrid_omega(temp_omega)
 
         # interpolate the frequency back in
         self.regrid_omega(original_omega)
 
     def regrid_omega(self, new_omega):
-
         exp_damping = expand_omega_dim_const(self._damping, new_omega)
         exp_mass = expand_omega_dim_const(self._mass, new_omega)
 
@@ -1009,7 +1000,6 @@ class Hyddb1(object):
             self._force[i].regrid_omega(new_omega)
 
     def regrid_direction(self, new_headings):
-
         # added mass and damping only depend on omega, not on wave-direction
         for i in range(6):
             self._force[i].regrid_direction(new_headings)
@@ -1101,7 +1091,6 @@ class Hyddb1(object):
             return "{:10s}".format(ident) + "".join(secs) + "\n"
 
         with open(filename, "wt") as f:
-
             # Fist 15 ident lines
             f.write("IDENT     *** .hyd file exported by MaFreDo        ***\n")
             for i in range(14):
@@ -1175,15 +1164,13 @@ class Hyddb1(object):
             f.write(fixed_format("PARA2", [0, 0]))
             f.write("END\n")
 
-    def _plot_amass_or_damping(self, data, ylab, unit : FrequencyUnit):
-
+    def _plot_amass_or_damping(self, data, ylab, unit: FrequencyUnit):
         fig, axes = plt.subplots(3, 2, figsize=(10, 15))
         axes = axes.flatten()
 
         x_label, x = unit.to_unit(self._mass.omega.values)
 
         for i in range(6):
-
             for other in range(6):
                 if i == other:
                     lw = 2
@@ -1195,15 +1182,14 @@ class Hyddb1(object):
                 axes[i].plot(x, data, lw=lw, label=self._modes[other])
 
             axes[i].set_title(self._modes[i])
-            axes[i].set_xlabel(f'[{x_label}]')
+            axes[i].set_xlabel(f"[{x_label}]")
             axes[i].set_ylabel(ylab)
             if i == 5:
                 axes[i].legend()
 
         return fig
 
-
-    def plot_added_mass(self, unit = FrequencyUnit.rad_s):
+    def plot_added_mass(self, unit=FrequencyUnit.rad_s):
         """Plots the added mass matrix"""
 
         fig = self._plot_amass_or_damping(self._mass, "Added mass", unit)
@@ -1212,7 +1198,7 @@ class Hyddb1(object):
 
         return fig
 
-    def plot_damping(self, unit = FrequencyUnit.rad_s):
+    def plot_damping(self, unit=FrequencyUnit.rad_s):
         """Plots the damping matrix"""
 
         fig = self._plot_amass_or_damping(self._damping, "Damping", unit)
@@ -1221,7 +1207,15 @@ class Hyddb1(object):
 
         return fig
 
-    def plot(self, adm=True, damp=True, amp=True, phase=True, do_show=True, unit=FrequencyUnit.rad_s):
+    def plot(
+        self,
+        adm=True,
+        damp=True,
+        amp=True,
+        phase=True,
+        do_show=True,
+        unit=FrequencyUnit.rad_s,
+    ):
         """Produces a plot of the contents of the database
 
         Args:
@@ -1244,12 +1238,11 @@ class Hyddb1(object):
         # --- RAO amplitudes
 
         if amp:
-
             fig, axes = plt.subplots(3, 2, figsize=(10, 15))
             axes = axes.flatten()
             for i in range(6):
                 force = self._force[i]
-                force.plot_amplitude(ax=axes[i],unit=unit)
+                force.plot_amplitude(ax=axes[i], unit=unit)
                 axes[i].set_title(self._modes[i])
             fig.suptitle("Force RAO amplitudes")
 
@@ -1258,12 +1251,11 @@ class Hyddb1(object):
         # --- RAO phass
 
         if phase:
-
             fig, axes = plt.subplots(3, 2, figsize=(10, 15))
             axes = axes.flatten()
             for i in range(6):
                 force = self._force[i]
-                force.plot_surface('phase',ax=axes[i],unit=unit)
+                force.plot_surface("phase", ax=axes[i], unit=unit)
                 axes[i].set_title(self._modes[i])
             fig.suptitle("Force RAO phase [rad]")
 
@@ -1284,7 +1276,7 @@ class Hyddb1(object):
         if do_show:
             plt.show()
 
-    def assert_allclose_to(self, other, atol=1, rtol=1e-3, atol_phase = 1e-4):
+    def assert_allclose_to(self, other, atol=1, rtol=1e-3, atol_phase=1e-4):
         """Asserts that the two databases are equal"""
 
         assert self.symmetry == other.symmetry
@@ -1292,13 +1284,20 @@ class Hyddb1(object):
         from numpy.testing import assert_allclose
 
         assert_allclose(self._mass.values, other._mass.values, rtol=rtol, atol=atol)
-        assert_allclose(self._damping.values, other._damping.values,  rtol=rtol, atol=atol)
+        assert_allclose(
+            self._damping.values, other._damping.values, rtol=rtol, atol=atol
+        )
 
         for i in range(6):
             F0 = self._force[i]
             Fc = other._force[i]
 
-            assert_allclose(F0._data.amplitude.values, Fc._data.amplitude.values,  rtol=rtol, atol=atol)
+            assert_allclose(
+                F0._data.amplitude.values,
+                Fc._data.amplitude.values,
+                rtol=rtol,
+                atol=atol,
+            )
 
             # for phases, only check those where the amplitude is significant
             p0 = F0._data.phase.values.copy()
@@ -1307,9 +1306,7 @@ class Hyddb1(object):
             amps = F0._data.amplitude.values
             treshold = np.mean(amps) / 10
 
-            p0[amps<treshold] = 0
-            pc[amps<treshold] = 0
+            p0[amps < treshold] = 0
+            pc[amps < treshold] = 0
 
             assert_allclose(p0, pc, rtol=1e-3, atol=atol_phase)
-
-
