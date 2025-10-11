@@ -1,23 +1,19 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=64", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
-urls = { 
-  Homepage = "https://github.com/RubendeBruin/mafredo",
-
-}
+urls = { Homepage = "https://github.com/RubendeBruin/mafredo", Documentation = "https://open-ocean.org/mafredo" }
 name = "MaFreDo"
 description = "Marine Frequency Domain"
+dynamic = ["version"] # versie komt uit git via setuptools-scm
 readme = { file = "README.rst", content-type = "text/x-rst" }
 authors = [{ name = "Ruben de Bruin", email = "rubenebruin@gmail.com" }]
 license = { text = "MPL-2.0" }
-Documentation = "https://open-ocean.org/mafredo"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
 ]
-# Uncomment if you want to enforce a minimum Python version
 # requires-python = ">=3.8"
 
 dependencies = [
@@ -32,11 +28,6 @@ dependencies = [
 [project.optional-dependencies]
 testing = ["setuptools", "pytest", "pytest-cov"]
 
-# No console scripts were defined in setup.cfg (only commented examples)
-# If needed later:
-# [project.scripts]
-# fibonacci = "rao.skeleton:run"
-
 [tool.setuptools]
 zip-safe = false
 include-package-data = true
@@ -48,11 +39,14 @@ include-package-data = true
 where = ["src"]
 exclude = ["tests"]
 
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "node-and-date"
+
 [tool.pytest.ini_options]
 addopts = ["--cov", "rao", "--cov-report", "term-missing", "--verbose"]
 norecursedirs = ["dist", "build", ".tox"]
 testpaths = ["tests"]
-# markers = ["slow", "system"]
 
 [tool.flake8]
 max_line_length = 88
@@ -65,8 +59,3 @@ universal = true
 [tool.devpi.upload]
 no_vcs = true
 formats = ["bdist_wheel"]
-
-[tool.pyscaffold]
-version = "4.0.1"
-package = "rao"
-extensions = ["gitlab", "no_skeleton"]
