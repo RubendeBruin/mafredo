@@ -50,9 +50,10 @@ version_scheme = "post-release"
 local_scheme = "node-and-date"
 
 [tool.pytest.ini_options]
-addopts = ["--cov", "rao", "--cov-report", "term-missing", "--verbose"]
+addopts = ["--cov=src/mafredo", "--cov-report=term-missing"]
 norecursedirs = ["dist", "build", ".tox"]
 testpaths = ["tests"]
+
 
 [tool.flake8]
 max_line_length = 88
