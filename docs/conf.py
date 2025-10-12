@@ -11,7 +11,6 @@ import os
 import sys
 import inspect
 import shutil
-import sphinx_rtd_theme
 
 
 # -- Path setup --------------------------------------------------------------
@@ -86,8 +85,8 @@ extensions = [
 ]
 
 sphinx_gallery_conf = {
-     'examples_dirs': './gallery',   # path to your example scripts
-     'gallery_dirs': 'auto_gallery',  # path to where to save gallery generated output
+    "examples_dirs": "./gallery",  # path to your example scripts
+    "gallery_dirs": "auto_gallery",  # path to where to save gallery generated output
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -95,9 +94,9 @@ templates_path = ["_templates"]
 
 # The suffix of source filenames.
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.txt': 'markdown',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
 }
 
 # The encoding of source files.
@@ -167,10 +166,7 @@ html_theme = "sphinx_rtd_theme"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "sidebar_width": "300px",
-    "page_width": "1200px"
-}
+html_theme_options = {"sidebar_width": "300px", "page_width": "1200px"}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
