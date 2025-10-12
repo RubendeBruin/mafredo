@@ -166,7 +166,11 @@ def test_rao_dict_with_none_mode():
     rao_dict = rao.to_dict()
     restored_rao = Rao.from_dict(rao_dict)
 
-    assert rao_dict["mode"] is None
+    # if mode is none, to_dict will not assign a key mode to the dict, hence it should not exist in the dict
+    assert "mode" not in rao_dict
+
+    # however, the Roa class does creates a mode attribute that is None is mode was not present
+    assert rao.mode is None
     assert restored_rao.mode is None
 
 
@@ -185,15 +189,18 @@ def test_hyddb1_to_dict():
     assert "symmetry" in hyd_dict
     assert "modes" in hyd_dict
 
+    mass_dict = hyd_dict["mass"]
+
     # Verify mass structure
-    assert "data" in hyd_dict["mass"]
-    assert "omega" in hyd_dict["mass"]
-    assert "radiating_dof" in hyd_dict["mass"]
-    assert "influenced_dof" in hyd_dict["mass"]
+    assert "data" in mass_dict
+    assert "omega" in mass_dict["coords"]
+    assert "radiating_dof" in mass_dict["coords"]
+    assert "influenced_dof" in mass_dict["coords"]
 
     # Verify damping structure
-    assert "data" in hyd_dict["damping"]
-    assert "omega" in hyd_dict["damping"]
+    damping_dict = hyd_dict["damping"]
+    assert "data" in damping_dict
+    assert "omega" in damping_dict["coords"]
 
     # Verify force structure (should be list of 6 RAO dicts)
     assert isinstance(hyd_dict["force"], list)
@@ -201,11 +208,31 @@ def test_hyddb1_to_dict():
 
     # Verify each force RAO dict has proper structure
     for force_dict in hyd_dict["force"]:
-        assert "amplitude" in force_dict
-        assert "phase" in force_dict
-        assert "wave_direction" in force_dict
-        assert "omega" in force_dict
-        assert "mode" in force_dict
+        assert (
+            "data_vars" in force_dict
+            and "coords" in force_dict
+            and "dims" in force_dict
+            and "attrs" in force_dict
+            and "mode" in force_dict
+        )
+
+        data_vars = force_dict["data_vars"]
+        coords = force_dict["coords"]
+        dims = force_dict["dims"]
+        attrs = force_dict["attrs"]
+        mode = force_dict["mode"]
+
+        assert "amplitude" in data_vars
+        assert "phase" in data_vars
+        assert "wave_direction" in coords
+        assert "omega" in coords
+        assert "wave_direction" in dims
+        assert "omega" in dims
+        assert not attrs
+        assert mode is None
+
+        assert dims["omega"] == 2
+        assert dims["wave_direction"] == 2
 
 
 def test_hyddb1_from_dict():

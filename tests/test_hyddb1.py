@@ -1,32 +1,37 @@
 import numpy as np
 import pytest
+import os
+import tempfile
 from numpy.testing import assert_almost_equal, assert_allclose
 
 from mafredo.hyddb1 import Hyddb1
 
-def gimme():
-    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+
+def gimme(data_path):
+    hyd = Hyddb1.create_from(data_path / "barge_100_30_4.dhyd")
     return hyd
 
-def test_check_dimensions():
-    hyd = gimme()
+
+def test_check_dimensions(data_path):
+    hyd = gimme(data_path=data_path)
     hyd._check_dimensions()
 
 
-def test_load_dhyd():
-    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+def test_load_dhyd(data_path):
+    hyd = Hyddb1.create_from(data_path / "barge_100_30_4.dhyd")
     hyd.plot()
 
     print(hyd._mass)
 
-def test_load_nc():
-    hyd = Hyddb1.create_from_capytaine(r"files/capytaine.nc")
+
+def test_load_nc(data_path):
+    hyd = Hyddb1.create_from_capytaine(data_path / "capytaine.nc")
 
     omega = 0.01
 
-    mass = hyd.amass(omega=omega)
-    damping = hyd.damping(omega=omega)
-    force = hyd.force(omega=omega, wave_direction=90)
+    _mass = hyd.amass(omega=omega)
+    _damping = hyd.damping(omega=omega)
+    _force = hyd.force(omega=omega, wave_direction=90)
 
 
 # def test_save_dhyd_to_no_complex():
@@ -35,15 +40,17 @@ def test_load_nc():
 #     r = rao.to_xarray_nocomplex()
 #     print(r)
 
-def test_save_dhyd():
-    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+
+def test_save_dhyd(data_path):
+    hyd = Hyddb1.create_from(data_path / "barge_100_30_4.dhyd")
 
     # find a temporary folder to work in
     import tempfile
     from pathlib import Path
+
     tempdir = Path(tempfile.gettempdir())
 
-    file = tempdir / 'test_write_dhyd_and_read_it_again.dhyd'
+    file = tempdir / "test_write_dhyd_and_read_it_again.dhyd"
 
     hyd.save_as(file)
 
@@ -61,9 +68,10 @@ def test_save_dhyd():
     #     assert_allclose(F0._data.amplitude.values, Fc._data.amplitude.values, rtol=1e-3, atol=1)
 
 
-def test_n_frequencies():
-    hyd = gimme()
+def test_n_frequencies(data_path):
+    hyd = gimme(data_path=data_path)
     assert hyd.n_frequencies == 28
+
 
 def test_n_frequencies_error():
     """Check that an error is raised if the RAOs have un-equal frequencies when n_frequencies is requested"""
@@ -72,16 +80,21 @@ def test_n_frequencies_error():
     with pytest.raises(ValueError):
         assert hyd.n_frequencies == 9
 
-def test_n_wave_directions():
-    hyd = gimme()
+
+def test_n_wave_directions(data_path):
+    hyd = gimme(data_path=data_path)
     assert hyd.n_wave_directions == 9
 
-def test_wave_directions():
-    hyd = gimme()
+
+def test_wave_directions(data_path):
+    hyd = gimme(data_path=data_path)
 
     from numpy.testing import assert_almost_equal
 
-    assert_almost_equal(hyd.wave_directions , [  0.  , 22.5 , 45. ,  67.5,  90.,  112.5, 135. , 157.5 ,180. ])
+    assert_almost_equal(
+        hyd.wave_directions, [0.0, 22.5, 45.0, 67.5, 90.0, 112.5, 135.0, 157.5, 180.0]
+    )
+
 
 def test_n_wave_directions_error():
     """Check that an error is raised if the RAOs have un-equal directions when n_wave_directions is requested"""
@@ -90,57 +103,80 @@ def test_n_wave_directions_error():
     with pytest.raises(ValueError):
         assert hyd.n_wave_directions == 9
 
-def test_write_hyd_file():
-    hyd = gimme()
-    hyd.to_hyd_file(r'c:\data\test.hyd', hydrostatics=None)
+
+def test_write_hyd_file(data_path):
+    hyd = gimme(data_path=data_path)
+
+    # Create temporary file
+    with tempfile.NamedTemporaryFile(suffix=".hyd", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        # Write to the temporary file
+        hyd.to_hyd_file(tmp_path, hydrostatics=None)
+
+        # Check if it exists
+        assert os.path.exists(tmp_path), "HYD file was not created"
+        assert os.path.getsize(tmp_path) > 0, "HYD file is empty"
+
+    finally:
+        # Clean up the file
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
 
 def test_add_addedmass():
     hyd = Hyddb1()
-    hyd.set_amass(omega = 1, m6x6 = np.ones((6,6)))
+    hyd.set_amass(omega=1, m6x6=np.ones((6, 6)))
 
     # by default omega=0 is set to zeros
     # check if interpolation to omega = 0.2 yields 0.2
     actual02 = hyd.amass(0.2)
-    expected = 0.2 * np.ones((6,6))
+    expected = 0.2 * np.ones((6, 6))
 
     assert_almost_equal(actual02, expected)
 
+
 def test_add_damping():
     hyd = Hyddb1()
-    hyd.set_damping(omega = 1, m6x6 = np.ones((6,6)))
+    hyd.set_damping(omega=1, m6x6=np.ones((6, 6)))
 
     actual03 = hyd.damping(0.3)
-    expected = 0.3 * np.ones((6,6))
+    expected = 0.3 * np.ones((6, 6))
 
     assert_almost_equal(actual03, expected)
 
-def test_read_hyd():
-    hyd = Hyddb1.create_from_hyd(r'files/barge.hyd')
+
+def test_read_hyd(data_path):
+    hyd = Hyddb1.create_from_hyd(data_path / "barge.hyd")
 
     hyd.plot(do_show=False)
 
-def test_interpolate_amass():
-    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+
+def test_interpolate_amass(data_path):
+    hyd = Hyddb1.create_from(data_path / "barge_100_30_4.dhyd")
     omegas = np.linspace(0.1, 4, 100)
 
     hyd.amass(omegas)
 
-def test_interpolate_damping():
-    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
+
+def test_interpolate_damping(data_path):
+    hyd = Hyddb1.create_from(data_path / "barge_100_30_4.dhyd")
     omegas = np.linspace(0.1, 4, 100)
 
     hyd.damping(omegas)
 
-def test_interpolate_damping_single():
-    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
-    omegas = np.linspace(0.1, 4, 100)
+
+def test_interpolate_damping_single(data_path):
+    hyd = Hyddb1.create_from(data_path / "barge_100_30_4.dhyd")
+    _omegas = np.linspace(0.1, 4, 100)
 
     hyd.damping(0.05)
 
 
-def test_interpolate_forces():
-    hyd = Hyddb1.create_from(r'files/barge_100_30_4.dhyd')
-    omegas = np.linspace(0.1, 4, 100)
+def test_interpolate_forces(data_path):
+    hyd = Hyddb1.create_from(data_path / "barge_100_30_4.dhyd")
+    _omegas = np.linspace(0.1, 4, 100)
 
     hyd.force(0.3, wave_direction=90)
     hyd.force(0.301, wave_direction=90)
