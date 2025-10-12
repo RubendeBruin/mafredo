@@ -1,0 +1,43 @@
+# === Default: always normalize to LF in repo ===
+* text=auto eol=lf
+
+# === Source code (Python, JS/TS, JSON, YAML, etc.) ===
+*.py     text eol=lf
+*.js     text eol=lf
+*.ts     text eol=lf
+*.json   text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.md     text eol=lf
+*.toml   text eol=lf
+*.css    text eol=lf
+*.scss   text eol=lf
+*.html   text eol=lf
+
+# === Windows-specific scripts (keep CRLF) ===
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+*.ps1    text eol=crlf
+
+# === Binary files (never touch line endings) ===
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.pdf    binary
+*.svg    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.pyd    binary
+*.so     binary
+*.dll    binary
+*.exe    binary
+*.zip    binary
+*.7z     binary
+*.tar    binary
+*.gz     binary
+*.mp4    binary
+*.mov    binary
+*.blend  binary
