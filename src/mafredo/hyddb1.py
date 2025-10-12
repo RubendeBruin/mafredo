@@ -5,7 +5,6 @@ import numpy as np
 from mafredo.rao import Rao
 from mafredo.helpers import (
     expand_omega_dim_const,
-    expand_direction_to_full_range,
     dof_names_to_numbers,
     MotionMode,
     Symmetry,
@@ -104,9 +103,9 @@ class Hyddb1(object):
 
         """
         _mass and _damping are (named) DataArrays with with dimensions 'omega','radiating_dof' and 'influenced_dof'
-        
+
         They are initialized to 0 for omega=0
-        
+
         """
         self._mass = xr.DataArray(
             np.zeros((1, 6, 6)),
@@ -345,7 +344,7 @@ class Hyddb1(object):
             with xr.open_dataset(filename, group="info", engine="netcdf4") as ds:
                 isym = ds["symmetry"]
                 R.symmetry = Symmetry(isym)
-        except:
+        except Exception:
             if R.n_wave_directions == 1:
                 R.symmetry = Symmetry.Circular
                 warn(
@@ -473,7 +472,7 @@ class Hyddb1(object):
                 values = [line[10 * i + 10 : 10 * i + 20] for i in range(7)]
 
                 if "PARA " in keyword:
-                    n_freq = int(values[0])
+                    _n_freq = int(values[0])
                     n_head = int(values[1])
                     sym = int(values[2])
 
@@ -725,8 +724,8 @@ class Hyddb1(object):
             # remove infinite frequency added mass and damping values
             freqs = freqs[1:]
 
-            amass_inf = amass[0]
-            damp_inf = damp[0]
+            _amass_inf = amass[0]
+            _damp_inf = damp[0]
 
             amass = amass[1:]
             damp = damp[1:]
@@ -734,12 +733,12 @@ class Hyddb1(object):
         # check that the frequencies for wave-forces and added-mass-and-damping are equal
         from numpy.testing import assert_allclose
 
-        (
-            assert_allclose(freqs_wf, freqs),
-            ValueError(
+        try:
+            assert_allclose(freqs_wf, freqs)
+        except AssertionError as err:
+            raise ValueError(
                 "Different frequencies for wave-forces and added-mass-and-damping"
-            ),
-        )
+            ) from err
 
         # ---------- we have all the data now, reshape and feed ---------
 
@@ -968,7 +967,7 @@ class Hyddb1(object):
 
         try:
             len(omegas)
-        except:
+        except Exception:
             omegas = [omegas]
 
         # find the value in self.frequencies that is closest to omega
@@ -1025,7 +1024,7 @@ class Hyddb1(object):
 
         try:
             len(omegas)
-        except:
+        except Exception:
             if omegas in self.frequencies:
                 return
             else:
@@ -1070,7 +1069,7 @@ class Hyddb1(object):
 
         # checks : frequencies for added mass, damping and wave-frequencies need to be the same
 
-        n_omega_waves = self._force
+        _n_omega_waves = self._force
 
         if hydrostatics is None:
             hydrostatics = dict()
@@ -1084,12 +1083,12 @@ class Hyddb1(object):
             hydrostatics["KMT_m"] = 0
             hydrostatics["KML_m"] = 0
 
-        """ The file consists of 80 character records; each record is divided into 8 sections of 10 
-            characters. The first section is reserved for a (compulsory) keyword. The remaining 
+        """ The file consists of 80 character records; each record is divided into 8 sections of 10
+            characters. The first section is reserved for a (compulsory) keyword. The remaining
             seven sections are reserved for (free format) data.
-            
-            
-            
+
+
+
         """
         from mafredo.helpers import f10
 

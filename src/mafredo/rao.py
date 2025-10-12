@@ -5,7 +5,7 @@ from mafredo.helpers import (
     expand_direction_to_full_range,
     FrequencyUnit,
 )
-from mafredo.helpers import MotionMode, Symmetry, MotionModeToStr
+from mafredo.helpers import MotionMode, MotionModeToStr
 
 
 __license__ = "mpl2"
@@ -235,12 +235,12 @@ class Rao(object):
         """
 
         # check that the data is consistent
-        assert len(omegas) == amplitude.shape[0], (
-            "Number of frequencies and amplitude data do not match"
-        )
-        assert len(directions) == amplitude.shape[1], (
-            "Number of headings and amplitude data do not match"
-        )
+        assert (
+            len(omegas) == amplitude.shape[0]
+        ), "Number of frequencies and amplitude data do not match"
+        assert (
+            len(directions) == amplitude.shape[1]
+        ), "Number of headings and amplitude data do not match"
         assert amplitude.shape == phase.shape, "Amplitude and phase data do not match"
 
         r = Rao()
@@ -272,8 +272,8 @@ class Rao(object):
             None
 
         Examples:
-            test = Rao()
-            test.wave_force_from_capytaine(r"capytaine.nc", MotionMode.HEAVE)
+            _test = Rao()
+            _test.wave_force_from_capytaine(r"capytaine.nc", MotionMode.HEAVE)
 
         """
         r = Rao()
@@ -334,7 +334,7 @@ class Rao(object):
 
         try:
             len(wave_direction)
-        except:
+        except Exception:
             if wave_direction in headings:
                 return
             wave_direction = [wave_direction]
@@ -348,7 +348,7 @@ class Rao(object):
         frequencies = self._data["omega"].values
         try:
             len(omega)
-        except:
+        except Exception:
             if omega in frequencies:
                 return
             omega = [omega]

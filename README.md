@@ -2,7 +2,7 @@
 
 A set of tools for working with frequency domain data for marine applications.
 
-The purpose of this package is **not** to provide yet another format for storing hydrodynamic data.  
+The purpose of this package is **not** to provide yet another format for storing hydrodynamic data.
 Instead, it aims to offer an easier way to **store, visualize, exchange, compare, and modify** this data.
 
 ---
@@ -11,7 +11,7 @@ Instead, it aims to offer an easier way to **store, visualize, exchange, compare
 
 MaFreDo provides Python classes for common hydrodynamic data types:
 
-- **Rao** — Response Amplitude Operators of any kind  
+- **Rao** — Response Amplitude Operators of any kind
 - **Hyddb1** — First-order hydrodynamic database with added mass, damping, and wave forces
 
 Each class includes static constructors to easily load from supported data sources. For example:
@@ -67,5 +67,5 @@ pip install mafredo
 
 ## Contributing
 
-Contributions, compliments, and complaints are welcome!  
+Contributions, compliments, and complaints are welcome!
 👉 [https://github.com/RubendeBruin/mafredo](https://github.com/RubendeBruin/mafredo)

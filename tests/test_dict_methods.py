@@ -9,7 +9,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from numpy.testing import assert_allclose, assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 
 from mafredo.rao import Rao
 from mafredo.hyddb1 import Hyddb1

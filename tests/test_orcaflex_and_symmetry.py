@@ -2,7 +2,7 @@ from mafredo import Hyddb1
 
 """The orcaflex .yml example file contains two vessel types.
 
-Both are 100x30x4 barges, but one is created using double symmetry while the other 
+Both are 100x30x4 barges, but one is created using double symmetry while the other
 does not employ symmetry at all.
 
 Applying symmetry on the first one should give the same result as the second one.

@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 import xarray as xr
 from mafredo import Hyddb1, Rao, MotionMode
 
@@ -13,7 +12,7 @@ def test_copy_crash(data_path):
 
     hyd2.regrid_omega([0.1, 0.2, 0.3])  # Regridding should work without issues
 
-    hyd3 = Hyddb1.create_from(filename)
+    _hyd3 = Hyddb1.create_from(filename)
 
 
 def test_copy_crash_rao(data_path):

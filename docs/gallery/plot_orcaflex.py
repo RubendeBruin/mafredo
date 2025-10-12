@@ -22,9 +22,7 @@ from mafredo import Hyddb1
 
 try:
     data = Hyddb1.create_from_orcaflex_yml(
-        filename="./barge_100x30x4_q1.yml",
-        vessel_type_name="Vessel type1",
-        iDraught=0
+        filename="./barge_100x30x4_q1.yml", vessel_type_name="Vessel type1", iDraught=0
     )
 
     print(data.symmetry)
@@ -35,8 +33,6 @@ try:
     print(data.symmetry)
     data.plot(adm=False, damp=False)
 
-except:
-    pass # read-the-docs
-
-
-
+except Exception as err:
+    print(err)
+    pass  # read-the-docs

@@ -1,5 +1,4 @@
 from mafredo import Hyddb1
-import matplotlib.pyplot as plt
 
 from numpy.testing import assert_allclose
 

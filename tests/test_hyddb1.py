@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import os
 import tempfile
-from numpy.testing import assert_almost_equal, assert_allclose
+from numpy.testing import assert_almost_equal
 
 from mafredo.hyddb1 import Hyddb1
 
