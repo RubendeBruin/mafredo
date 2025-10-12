@@ -40,7 +40,7 @@ def test_rao_to_dict():
     # Convert to dict
     rao_dict = rao.to_dict()
 
-    # This unit has updated as the unit test did not correspond to the actual structure of xarray to dict
+    # This unit has been updated as the unit test did not correspond to the actual structure of xarray to dict
 
     # Verify structure
     assert (
