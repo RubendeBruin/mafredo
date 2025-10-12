@@ -7,7 +7,6 @@ repos:
       - id: check-toml
       - id: check-yaml
       - id: end-of-file-fixer
-        exclude: ^src/pymeshup/DAVE/GHS_to_DAVE_form\.py$
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -15,14 +14,11 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-        exclude: ^src/pymeshup/DAVE/GHS_to_DAVE_form\.py$
       - id: ruff-format
-        exclude: ^src/pymeshup/DAVE/GHS_to_DAVE_form\.py$
 
   - repo: https://github.com/JoC0de/pre-commit-prettier
     rev: v3.6.2
     hooks:
       - id: prettier
         args: ["--write"]
-        types_or:
-          [javascript, jsx, ts, tsx, json, markdown, yaml, css, scss, html]
+        types_or: [javascript, jsx, ts, tsx, json, markdown, yaml, css, scss, html]
