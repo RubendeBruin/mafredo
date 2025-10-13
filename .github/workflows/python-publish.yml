@@ -30,6 +30,7 @@ jobs:
           pip install setuptools wheel twine pyscaffold
       - name: Build and publish
         run: |
-          python setup.py sdist bdist_wheel
+          pip install build
+          python -m build
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
