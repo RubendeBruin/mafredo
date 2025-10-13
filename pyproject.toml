@@ -27,7 +27,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pyside6>=6.10.0",
+    "pyside6-essentials>=6.10.0",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
     "setuptools>=80.9.0",
