@@ -6,10 +6,12 @@ Minimum example
 
 """
 
-from mafredo import *
+from pathlib import Path
+from mafredo import Hyddb1
+import matplotlib.pyplot as plt
 
-# First create the object
-vessel = Hyddb1.create_from_hyd('barge.hyd')
-
-# and finally plot
+file_name = Path(__file__).parent / "barge.hyd"
+vessel = Hyddb1.create_from_hyd(filename=file_name)
 vessel.plot()
+
+plt.show()
