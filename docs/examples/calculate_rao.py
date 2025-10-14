@@ -4,18 +4,18 @@ import matplotlib.pyplot as plt
 
 hyd = hyddb1.Hyddb1()
 
-print('reading data')
+print("reading data")
 
 # hyd.load_from_capytaine(r"capytaine.nc")
 hyd.create_from(r"c:\data\temp.nc")
 
 # Barge is 100m x 30m x 5m draft
-Awl = 100*30
-Disp = 100*30*5
+Awl = 100 * 30
+Disp = 100 * 30 * 5
 KB = 2.5
 KG = 5
-BMt = (1/12)*100*30**3 / Disp
-BMl = (1/12)*30*100**3 / Disp
+BMt = (1 / 12) * 100 * 30**3 / Disp
+BMl = (1 / 12) * 30 * 100**3 / Disp
 GMt = KB + BMt - KG
 GMl = KB + BMl - KG
 
@@ -25,41 +25,40 @@ ryy = 40
 rzz = 40
 
 # Intertia matrix
-I = np.zeros((6,6))
-I[0,0] = mass
-I[1,1] = mass
-I[2,2] = mass
-I[3,3] = mass * rxx**2
-I[4,4] = mass * ryy**2
-I[5,5] = mass * rzz**2
+I_matrxi = np.zeros((6, 6))
+I_matrxi[0, 0] = mass
+I_matrxi[1, 1] = mass
+I_matrxi[2, 2] = mass
+I_matrxi[3, 3] = mass * rxx**2
+I_matrxi[4, 4] = mass * ryy**2
+I_matrxi[5, 5] = mass * rzz**2
 
-print(I.diagonal())
+print(I_matrxi.diagonal())
 
 # Stiffness matrix
-K = np.zeros((6,6))
-K[0,0] = 100
-K[1,1] = 100
-K[2,2] = Awl * 1.025*9.81
-K[3,3] = GMt * Disp * 1.025 * 9.81
-K[4,4] = GMl * Disp * 1.025 * 9.81
-K[5,5] = 100
+K = np.zeros((6, 6))
+K[0, 0] = 100
+K[1, 1] = 100
+K[2, 2] = Awl * 1.025 * 9.81
+K[3, 3] = GMt * Disp * 1.025 * 9.81
+K[4, 4] = GMl * Disp * 1.025 * 9.81
+K[5, 5] = 100
 
 # Calculate the RAO
 
-omegas = np.linspace(0.01,4,100)
+omegas = np.linspace(0.01, 4, 100)
 # omegas = hyd.frequencies
 heading = 90
 
-print('regridding')
+print("regridding")
 
 hyd.add_frequencies(omegas)
 
-print('calculating rao')
+print("calculating rao")
 rao = []
 
 
 for omega in omegas:
-
     # get the hydrodynamic components
     added_mass = hyd.amass(omega)
     B_hyd = hyd.damping(omega)
@@ -69,9 +68,9 @@ for omega in omegas:
     # -omega^2 M + omega B + K = F
 
     # inertia terms
-    A = np.zeros((6,6),dtype=complex)
+    A = np.zeros((6, 6), dtype=complex)
 
-    A += -omega**2 * (I + added_mass)
+    A += -(omega**2) * (I_matrxi + added_mass)
 
     # damping terms
     A += 1j * omega * B_hyd
@@ -83,54 +82,42 @@ for omega in omegas:
     x = np.linalg.solve(A, F_wave)
     rao.append(x)
 
-print('plotting')
+print("plotting")
 
 
 plt.figure()
 for i in range(6):
-
     a = np.array([r[i] for r in rao])
 
     ax1 = plt.subplot(3, 2, i + 1)
 
     amplitude = abs(a)
-    if i>2:
+    if i > 2:
         amplitude = np.rad2deg(amplitude)
 
-
-    ax1.plot(omegas, amplitude, label = "amplitude", color = 'black', linewidth = 1)
+    ax1.plot(omegas, amplitude, label="amplitude", color="black", linewidth=1)
     plt.title(hyd._modes[i])
-    ax1.set_xlabel('omega [rad/s]')
+    ax1.set_xlabel("omega [rad/s]")
 
     yy = plt.ylim()
     if yy[1] < 1e-5:
-        plt.ylim((0,0.1))
+        plt.ylim((0, 0.1))
         continue
     else:
         plt.ylim((0, yy[1]))
 
-
-    if i==4:
+    if i == 4:
         plt.legend()
 
     ax2 = ax1.twinx()
-    ax2.plot(omegas, np.angle(a),label = "phase", color = 'black', linestyle = ':', linewidth = 1)
+    ax2.plot(
+        omegas, np.angle(a), label="phase", color="black", linestyle=":", linewidth=1
+    )
 
-
-    if i==5:
+    if i == 5:
         plt.legend()
 
-plt.suptitle('Incoming wave direction = {}'.format(heading))
+plt.suptitle("Incoming wave direction = {}".format(heading))
 plt.tight_layout()
 
 plt.show()
-
-
-
-
-
-
-
-
-
-

@@ -1,27 +1,34 @@
-
-
 import xarray as xr
 import numpy as np
-from mafredo.helpers import expand_omega_dim_const, expand_direction_to_full_range, FrequencyUnit
-from mafredo.helpers import MotionMode, Symmetry, MotionModeToStr
+from mafredo.helpers import (
+    expand_omega_dim_const,
+    expand_direction_to_full_range,
+    FrequencyUnit,
+)
+from mafredo.helpers import MotionMode, MotionModeToStr
 
 
 __license__ = "mpl2"
 
 # ----- helpers -----
 
+
 def _complex_unit_add(data):
-    data['complex_unit'] = np.exp(1j * data['phase'])
+    data["complex_unit"] = np.exp(1j * data["phase"])
+
 
 # def _complex_unit_add_normalize(data):
 #     """Normalized the complex units - needs to be done after interpolation"""
 #     data['complex_unit'] = data['complex_unit'] / abs(data['complex_unit'])
 
+
 def _complex_unit_delete(data):
-    return data.drop_vars('complex_unit')
+    return data.drop_vars("complex_unit")
+
 
 def _complex_unit_to_phase(data):
-    data['phase'].values = np.angle(data['complex_unit'].values)
+    data["phase"].values = np.angle(data["complex_unit"].values)
+
 
 # -----------------
 
@@ -118,15 +125,19 @@ class Rao(object):
     """
 
     def __init__(self):
-
         # dummy
-        self._data = xr.Dataset({
-            'amplitude': (['wave_direction', 'omega'], np.zeros((2,2),dtype=float)),
-            'phase': (['wave_direction', 'omega'], np.zeros((2,2),dtype=float)),
-                    },
-            coords={'wave_direction': [0,180],
-                    'omega': [0,4],
-                    }
+        self._data = xr.Dataset(
+            {
+                "amplitude": (
+                    ["wave_direction", "omega"],
+                    np.zeros((2, 2), dtype=float),
+                ),
+                "phase": (["wave_direction", "omega"], np.zeros((2, 2), dtype=float)),
+            },
+            coords={
+                "wave_direction": [0, 180],
+                "omega": [0, 4],
+            },
         )
 
         self.mode = None
@@ -147,7 +158,7 @@ class Rao(object):
 
     @property
     def n_wave_directions(self):
-        """The number of headings or wave-directions """
+        """The number of headings or wave-directions"""
         return len(self._data.wave_direction)
 
     @property
@@ -162,14 +173,14 @@ class Rao(object):
         """To xarray with complex numbers separated (netCDF compatibility)"""
 
         e = self._data.copy(deep=True)
-        a = self._data['amplitude'] * self['complex_unit']
-        e['real'] = np.real(a)
-        e['imag'] = np.imag(a)
+        a = self._data["amplitude"] * self["complex_unit"]
+        e["real"] = np.real(a)
+        e["imag"] = np.imag(a)
 
-        if 'complex_unit' in e:
-            e = e.drop_vars('complex_unit')
+        if "complex_unit" in e:
+            e = e.drop_vars("complex_unit")
 
-        e = e.drop_vars('amplitude')
+        e = e.drop_vars("amplitude")
         return e
 
     def add(self, other):
@@ -177,29 +188,34 @@ class Rao(object):
         using its default arguments."""
 
         assert isinstance(other, Rao), "other needs to be a Rao object"
-        self._data = self._data.merge(other._data)
+        # explicit join and compat with default values to prevent futute warning
+        self._data = self._data.merge(
+            other._data,
+            join="outer",
+            compat="no_conflicts",
+        )
 
     @staticmethod
-    def create_from_xarray_nocomplex(a, mode : MotionMode):
+    def create_from_xarray_nocomplex(a, mode: MotionMode):
         """From xarray with complex numbers separated (netCDF compatibility)"""
         r = Rao()
 
-        assert isinstance(mode, MotionMode), 'mode shall be of MotionMode'
+        assert isinstance(mode, MotionMode), "mode shall be of MotionMode"
 
         r._data = a.copy(deep=True)
-        c = a['real'] + 1j * a['imag']
-        r._data['amplitude'] = np.abs(c)
-        r._data['phase'] = r._data['amplitude']  # first create dummy copy
-        r._data['phase'].values = np.angle(c)       # then set values
+        c = a["real"] + 1j * a["imag"]
+        r._data["amplitude"] = np.abs(c)
+        r._data["phase"] = r._data["amplitude"]  # first create dummy copy
+        r._data["phase"].values = np.angle(c)  # then set values
 
-        r._data = r._data.drop_vars('real')
-        r._data = r._data.drop_vars('imag')
+        r._data = r._data.drop_vars("real")
+        r._data = r._data.drop_vars("imag")
         r.mode = mode
 
         return r
 
     @staticmethod
-    def create_from_data(directions, omegas, amplitude, phase, mode = None):
+    def create_from_data(directions, omegas, amplitude, phase, mode=None):
         """Creates a new Rao object with the given data
 
         Args:
@@ -219,26 +235,31 @@ class Rao(object):
         """
 
         # check that the data is consistent
-        assert len(omegas) == amplitude.shape[0], 'Number of frequencies and amplitude data do not match'
-        assert len(directions) == amplitude.shape[1], 'Number of headings and amplitude data do not match'
-        assert amplitude.shape == phase.shape, 'Amplitude and phase data do not match'
-
+        assert (
+            len(omegas) == amplitude.shape[0]
+        ), "Number of frequencies and amplitude data do not match"
+        assert (
+            len(directions) == amplitude.shape[1]
+        ), "Number of headings and amplitude data do not match"
+        assert amplitude.shape == phase.shape, "Amplitude and phase data do not match"
 
         r = Rao()
 
-        r._data = xr.Dataset({
-            'amplitude': (['omega','wave_direction'], amplitude),
-            'phase': (['omega','wave_direction'], phase),
-                    },
-            coords={'wave_direction': directions,
-                    'omega': omegas,
-                    }
+        r._data = xr.Dataset(
+            {
+                "amplitude": (["omega", "wave_direction"], amplitude),
+                "phase": (["omega", "wave_direction"], phase),
+            },
+            coords={
+                "wave_direction": directions,
+                "omega": omegas,
+            },
         )
         r.mode = mode
         return r
 
     @staticmethod
-    def create_from_capytaine_wave_force(filename, mode : MotionMode):
+    def create_from_capytaine_wave_force(filename, mode: MotionMode):
         """
         Reads hydrodynamic data from a netCFD file created with capytaine and copies the
         data for the requested mode into the object.
@@ -251,37 +272,40 @@ class Rao(object):
             None
 
         Examples:
-            test = Rao()
-            test.wave_force_from_capytaine(r"capytaine.nc", MotionMode.HEAVE)
+            _test = Rao()
+            _test.wave_force_from_capytaine(r"capytaine.nc", MotionMode.HEAVE)
 
         """
         r = Rao()
 
         from capytaine.io.xarray import merge_complex_values
+
         dataset = merge_complex_values(xr.open_dataset(filename))
 
-        wave_direction = dataset['wave_direction'] * (180 / np.pi) # convert rad to deg
-        dataset = dataset.assign_coords(wave_direction = wave_direction)
+        wave_direction = dataset["wave_direction"] * (180 / np.pi)  # convert rad to deg
+        dataset = dataset.assign_coords(wave_direction=wave_direction)
 
-        if 'excitation_force' not in dataset:
-            dataset['excitation_force'] = dataset['Froude_Krylov_force'] + dataset['diffraction_force']
+        if "excitation_force" not in dataset:
+            dataset["excitation_force"] = (
+                dataset["Froude_Krylov_force"] + dataset["diffraction_force"]
+            )
 
         cmode = MotionModeToStr(mode)
 
-        da = dataset['excitation_force'].sel(influenced_dof = cmode)
+        da = dataset["excitation_force"].sel(influenced_dof=cmode)
 
         r._data = xr.Dataset()
 
-        r._data['amplitude'] = np.abs(da)
+        r._data["amplitude"] = np.abs(da)
 
-        r._data['phase'] = r._data['amplitude']  # To avoid shape mismatch,
-        r._data['phase'].values = np.angle(da)   # first copy with dummy data - then fill
+        r._data["phase"] = r._data["amplitude"]  # To avoid shape mismatch,
+        r._data["phase"].values = np.angle(da)  # first copy with dummy data - then fill
 
         r.mode = mode
         return r
 
-    def regrid_omega(self,new_omega):
-        """Regrids the omega axis to new_omega [rad/s] """
+    def regrid_omega(self, new_omega):
+        """Regrids the omega axis to new_omega [rad/s]"""
 
         # check if the requested omega values are outside the current frequency grid
         # if so then duplicate the highest or lowest entry to this value
@@ -289,28 +313,28 @@ class Rao(object):
         temp = expand_omega_dim_const(self._data, new_omega)
 
         _complex_unit_add(temp)
-        self._data = temp.interp(omega=new_omega, method='linear')
+        self._data = temp.interp(omega=new_omega, method="linear")
         _complex_unit_to_phase(self._data)
         self._data = _complex_unit_delete(self._data)
 
     def regrid_direction(self, new_headings):
-        """Regrids the direction axis to new_headings [degrees]. """
+        """Regrids the direction axis to new_headings [degrees]."""
 
         # repeat the zero heading at the zero + 360 / -360 as needed
-        expanded =  expand_direction_to_full_range(self._data)
+        expanded = expand_direction_to_full_range(self._data)
         _complex_unit_add(expanded)
-        self._data = expanded.interp(wave_direction=new_headings, method='linear')
+        self._data = expanded.interp(wave_direction=new_headings, method="linear")
         _complex_unit_to_phase(self._data)
         self._data = _complex_unit_delete(self._data)
 
     def add_direction(self, wave_direction):
         """Adds the given direction to the RAO by interpolation [deg]"""
 
-        headings = self._data['wave_direction'].values
+        headings = self._data["wave_direction"].values
 
         try:
             len(wave_direction)
-        except:
+        except Exception:
             if wave_direction in headings:
                 return
             wave_direction = [wave_direction]
@@ -321,10 +345,10 @@ class Rao(object):
 
     def add_frequency(self, omega):
         """Adds the given frequency to the RAO by interpolation [rad/s]"""
-        frequencies = self._data['omega'].values
+        frequencies = self._data["omega"].values
         try:
             len(omega)
-        except:
+        except Exception:
             if omega in frequencies:
                 return
             omega = [omega]
@@ -333,29 +357,32 @@ class Rao(object):
         new_omega.sort()
         self.regrid_omega(new_omega)
 
-
-
     def scale(self, factor):
         """Scales the amplitude by the given scale factor (positive numbers only as amplitude can not be negative)"""
 
-        if factor<0:
-            raise ValueError('Amplitude can not be negative. If you need an opposite response then apply a phase change of pi')
-        self._data['amplitude'] *= factor
-
+        if factor < 0:
+            raise ValueError(
+                "Amplitude can not be negative. If you need an opposite response then apply a phase change of pi"
+            )
+        self._data["amplitude"] *= factor
 
     def get_value(self, omega, wave_direction):
         """Returns the value at the requested position.
-         If the data-point is not yet available in the database, then the corresponding frequency and wave-direction
-         are added to the grid by linear interpolation.
+        If the data-point is not yet available in the database, then the corresponding frequency and wave-direction
+        are added to the grid by linear interpolation.
 
-         """
+        """
 
         # Make sure the datapoint is available.
         self.add_direction(wave_direction)  # for linear interpolation the
-        self.add_frequency(omega)           # order of interpolations does not matter
+        self.add_frequency(omega)  # order of interpolations does not matter
 
-        amp =  self._data['amplitude'].sel(wave_direction=wave_direction, omega=omega).values
-        cu = self['complex_unit'].sel(wave_direction=wave_direction, omega=omega).values
+        amp = (
+            self._data["amplitude"]
+            .sel(wave_direction=wave_direction, omega=omega)
+            .values
+        )
+        cu = self["complex_unit"].sel(wave_direction=wave_direction, omega=omega).values
 
         return cu * amp
 
@@ -364,27 +391,24 @@ class Rao(object):
 
         the shape is (n_wave_directions, n_frequencies)
         """
-        amp =  self._data['amplitude'].values
-        cu = self['complex_unit'].values
+        amp = self._data["amplitude"].values
+        cu = self["complex_unit"].values
 
         return cu * amp
 
-
-
     def get_heading(self, wave_direction):
         """Returns the complex rao values at the requested wave direction
-         If the heading is not yet available in the database, then the corresponding wave-direction
-         is added to the grid by linear interpolation.
-         """
+        If the heading is not yet available in the database, then the corresponding wave-direction
+        is added to the grid by linear interpolation.
+        """
 
         # Make sure the datapoint is available.
         self.add_direction(wave_direction)  # for linear interpolation the
 
-        amp =  self._data['amplitude'].sel(wave_direction=wave_direction).values
-        cu = self['complex_unit'].sel(wave_direction=wave_direction).values
+        amp = self._data["amplitude"].sel(wave_direction=wave_direction).values
+        cu = self["complex_unit"].sel(wave_direction=wave_direction).values
 
         return cu * amp
-
 
     def expand_symmetry_xz(self):
         """Appends equivalent headings considering xz symmetry to the dataset.
@@ -395,30 +419,41 @@ class Rao(object):
         except that for sway, roll and yaw a sign change will be applied (phase shift of pi)
 
         """
-        if self.mode in (MotionMode.SWAY, MotionMode.ROLL, MotionMode.YAW):  # ['SWAY','ROLL','YAW']:
+        if self.mode in (
+            MotionMode.SWAY,
+            MotionMode.ROLL,
+            MotionMode.YAW,
+        ):  # ['SWAY','ROLL','YAW']:
             opposite = True
-        elif self.mode in (MotionMode.SURGE, MotionMode.HEAVE, MotionMode.PITCH):# ['SURGE','HEAVE','PITCH']:
+        elif self.mode in (
+            MotionMode.SURGE,
+            MotionMode.HEAVE,
+            MotionMode.PITCH,
+        ):  # ['SURGE','HEAVE','PITCH']:
             opposite = False
         else:
-            raise ValueError('Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}'.format(self.mode))
+            raise ValueError(
+                "Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}".format(
+                    self.mode
+                )
+            )
 
-        directions = self._data.coords['wave_direction'].values
+        directions = self._data.coords["wave_direction"].values
 
         for direction in directions:
-
             direction_copy = np.mod(-direction, 360)
             if direction_copy in directions:
                 continue
 
             sym = self._data.sel(wave_direction=direction)
-            sym.coords['wave_direction'].values = direction_copy
+            sym.coords["wave_direction"].values = direction_copy
 
             if opposite:
-                sym['phase'] = np.mod(sym['phase'] + np.pi, 2*np.pi)
+                sym["phase"] = np.mod(sym["phase"] + np.pi, 2 * np.pi)
 
-            self._data = xr.concat([self._data, sym], dim='wave_direction')
+            self._data = xr.concat([self._data, sym], dim="wave_direction")
 
-        self._data = self._data.sortby('wave_direction')
+        self._data = self._data.sortby("wave_direction")
 
     def expand_symmetry_yz(self):
         """Appends equivalent headings considering yz symmetry to the dataset.
@@ -434,32 +469,35 @@ class Rao(object):
         elif self.mode in (MotionMode.SWAY, MotionMode.HEAVE, MotionMode.ROLL):
             opposite = False
         else:
-            raise ValueError('Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}'.format(self.mode))
+            raise ValueError(
+                "Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}".format(
+                    self.mode
+                )
+            )
 
-        directions = self._data.coords['wave_direction'].values
+        directions = self._data.coords["wave_direction"].values
 
         for direction in directions:
-
-            direction_copy = np.mod(180-direction, 360)
+            direction_copy = np.mod(180 - direction, 360)
             if direction_copy in directions:
                 continue
 
             sym = self._data.sel(wave_direction=direction)
-            sym.coords['wave_direction'].values = direction_copy
+            sym.coords["wave_direction"].values = direction_copy
 
             if opposite:
-                sym['phase'] = np.mod(sym['phase'] + np.pi, 2*np.pi)
+                sym["phase"] = np.mod(sym["phase"] + np.pi, 2 * np.pi)
 
-            self._data = xr.concat([self._data, sym], dim='wave_direction')
+            self._data = xr.concat([self._data, sym], dim="wave_direction")
 
-        self._data = self._data.sortby('wave_direction')
+        self._data = self._data.sortby("wave_direction")
 
     def __getitem__(self, key):
         if key == "complex_unit":
             _complex_unit_add(self._data)
-            return self._data['complex_unit']
+            return self._data["complex_unit"]
         elif key == "complex":
-            return self['complex_unit'] * self._data['amplitude']
+            return self["complex_unit"] * self._data["amplitude"]
         else:
             return self._data[key]
 
@@ -468,44 +506,44 @@ class Rao(object):
 
     def to_dict(self):
         """Converts the RAO to a dictionary representation that can be serialized to JSON.
-        
+
         Returns:
             dict: Dictionary containing all RAO data and metadata
         """
         data_dict = self._data.to_dict()
-        data_dict['mode'] = self.mode.value if self.mode is not None else None
+        data_dict["mode"] = self.mode.value if self.mode is not None else None
         return data_dict
 
     @staticmethod
     def from_dict(data_dict):
         """Creates a RAO object from a dictionary representation.
-        
+
         Args:
             data_dict (dict): Dictionary containing RAO data and metadata
-            
+
         Returns:
             Rao: New RAO object with the data from the dictionary
         """
         # Extract mode before creating xarray dataset
-        mode_value = data_dict.pop('mode', None)
+        mode_value = data_dict.pop("mode", None)
         mode = MotionMode(mode_value) if mode_value is not None else None
-        
+
         # Create RAO object and restore xarray dataset
         rao = Rao()
         rao._data = xr.Dataset.from_dict(data_dict)
         rao.mode = mode
-        
+
         return rao
 
     def plot_amplitude(self, ax=None, unit=FrequencyUnit.rad_s):
         """Plots the amplitude"""
-        self.plot('amplitude', ax=ax, unit=unit)
+        self.plot("amplitude", ax=ax, unit=unit)
 
     def plot_phase(self, ax=None, unit=FrequencyUnit.rad_s):
         """Plots the phase"""
-        self.plot('phase', ax=ax, unit=unit)
+        self.plot("phase", ax=ax, unit=unit)
 
-    def plot(self, what = 'amplitude', ax=None, unit=FrequencyUnit.rad_s):
+    def plot(self, what="amplitude", ax=None, unit=FrequencyUnit.rad_s):
         """Plots the amplitude"""
         import matplotlib.pyplot as plt
 
@@ -514,33 +552,35 @@ class Rao(object):
 
         omega = self.omega
 
-        unit_label,x = unit.to_unit(omega)
+        unit_label, x = unit.to_unit(omega)
 
-        headings = self._data['wave_direction'].values
+        headings = self._data["wave_direction"].values
 
         for i, heading in enumerate(headings):
             data = self._data[what].sel(wave_direction=heading).values
-            ax.plot(x, data, label='{}'.format(heading))
+            ax.plot(x, data, label="{}".format(heading))
 
         if self.n_wave_directions > 1:
             ax.legend()
 
         ax.legend()
 
-        ax.set_ylabel('Amplitude')
-        ax.set_xlabel(f'Frequency [{unit_label}]')
+        ax.set_ylabel("Amplitude")
+        ax.set_xlabel(f"Frequency [{unit_label}]")
 
-    def plot_surface(self, what = 'amplitude', ax=None, unit=FrequencyUnit.rad_s, cmap=None):
+    def plot_surface(
+        self, what="amplitude", ax=None, unit=FrequencyUnit.rad_s, cmap=None
+    ):
         """Plots amplitude or phase as a surface plot"""
 
         if self.n_wave_directions == 1:
             self.plot(what=what, ax=ax, unit=unit)
 
-        if cmap is None: # default colormaps
-            if what == 'amplitude':
-                cmap = 'Greys'
+        if cmap is None:  # default colormaps
+            if what == "amplitude":
+                cmap = "Greys"
             else:
-                cmap = 'hsv' # cyclic colormap
+                cmap = "hsv"  # cyclic colormap
 
         import matplotlib.pyplot as plt
 
@@ -548,15 +588,18 @@ class Rao(object):
             ax = plt.gca()
 
         omega = self.omega
-        unit_label,x = unit.to_unit(omega)
+        unit_label, x = unit.to_unit(omega)
 
-        headings = self._data['wave_direction'].values
+        headings = self._data["wave_direction"].values
 
         data = self._data[what].values
 
-        ax.imshow(data, extent=[min(headings), max(headings), min(x), max(x) ], aspect='auto', cmap=cmap)
+        ax.imshow(
+            data,
+            extent=[min(headings), max(headings), min(x), max(x)],
+            aspect="auto",
+            cmap=cmap,
+        )
 
-        ax.set_xlabel('Heading [deg]')
-        ax.set_ylabel(f'Frequency [{unit_label}]')
-
-
+        ax.set_xlabel("Heading [deg]")
+        ax.set_ylabel(f"Frequency [{unit_label}]")
