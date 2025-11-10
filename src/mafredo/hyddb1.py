@@ -743,11 +743,15 @@ class Hyddb1(object):
             amass = amass[1:]
             damp = damp[1:]
 
+        # ensure wave-force frequencies were parsed
+        if freqs_wf is None:
+            raise ValueError("No wave-force frequencies found in RAOs")
+
         # check that the frequencies for wave-forces and added-mass-and-damping are equal
         from numpy.testing import assert_allclose
 
         try:
-            assert_allclose(freqs_wf, freqs)
+            assert_allclose(np.asarray(freqs_wf), np.asarray(freqs))
         except AssertionError as err:
             raise ValueError(
                 "Different frequencies for wave-forces and added-mass-and-damping"
