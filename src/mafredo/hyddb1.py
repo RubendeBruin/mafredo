@@ -328,60 +328,6 @@ class Hyddb1:
         return hyd
 
     @staticmethod
-    def __create_from_load_mass_damping(R, filename):
-        with xr.open_dataarray(filename, group="mass", engine="h5netcdf") as ds:
-            R._mass = dof_names_to_numbers(ds)
-        with xr.open_dataarray(filename, group="damping", engine="h5netcdf") as ds:
-            R._damping = dof_names_to_numbers(ds)
-
-    @staticmethod
-    def __create_from_load_forces(R, filename):
-        R._force = []
-        for mode in MotionMode:
-            with xr.open_dataset(filename, group=MotionModeToStr(mode), engine="h5netcdf") as ds:
-                r = Rao.create_from_xarray_nocomplex(ds, mode)
-                R._force.append(r)
-
-    @staticmethod
-    def __create_from_guess_symmetry(R, filename):
-        if R.n_wave_directions == 1:
-            R.symmetry = Symmetry.Circular
-            logger.warning(f"Guessing symmetry for {filename} to be Circular because only one heading is present")
-        else:
-            max_dir = np.max(R.wave_directions)
-
-            if max_dir <= 90:
-                R.symmetry = Symmetry.XZ_and_YZ
-                logger.warning(
-                    f"Guessing symmetry for {filename} to be XZ_and_YZ because maximum heading = {max_dir} deg"
-                )
-            elif max_dir <= 180:
-                R.symmetry = Symmetry.XZ
-                logger.warning(
-                    f"Guessing symmetry for {filename} to be XZ (PS/SB) because maximum heading = {max_dir} deg"
-                )
-            else:
-                R.symmetry = Symmetry.No
-                logger.warning(f"Guessing no symmetry for {filename} because maximum heading is {max_dir} deg")
-
-    @staticmethod
-    def __create_from_read_symmetry(R, filename):
-        try:
-            with xr.open_dataset(filename, group="info", engine="h5netcdf") as ds:
-                isym = ds["symmetry"]
-                R.symmetry = Symmetry(isym)
-        except Exception:
-            Hyddb1.__create_from_guess_symmetry(R, filename)
-
-    @staticmethod
-    def __create_from_check_symmetry(R):
-        if R.symmetry == Symmetry.XZ:
-            if np.any(R.wave_directions > 180):
-                logger.warning("Symmetry is set to XZ but headings exceed 180 degrees")
-        elif R.symmetry == Symmetry.No and np.any(R.wave_directions > 90) and np.all(R.wave_directions <= 180):
-            logger.warning("Symmetry is not present, but no headings exceeding 180 degrees were found")
-
-    @staticmethod
     def create_from(filename):
         """Loads hydrodynamic data from a netcdf4 file, for example one as saved using save_as.
 
@@ -390,10 +336,49 @@ class Hyddb1:
         """
         R = Hyddb1()
 
-        Hyddb1.__create_from_load_mass_damping(R, filename)
-        Hyddb1.__create_from_load_forces(R, filename)
-        Hyddb1.__create_from_read_symmetry(R, filename)
-        Hyddb1.__create_from_check_symmetry(R)
+        with xr.open_dataarray(filename, group="mass", engine="h5netcdf") as ds:
+            R._mass = dof_names_to_numbers(ds)
+        with xr.open_dataarray(filename, group="damping", engine="h5netcdf") as ds:
+            R._damping = dof_names_to_numbers(ds)
+
+        R._force = []
+        for mode in MotionMode:
+            with xr.open_dataset(filename, group=MotionModeToStr(mode), engine="h5netcdf") as ds:
+                r = Rao.create_from_xarray_nocomplex(ds, mode)
+                R._force.append(r)
+
+        # try read info
+        try:
+            with xr.open_dataset(filename, group="info", engine="h5netcdf") as ds:
+                isym = ds["symmetry"]
+                R.symmetry = Symmetry(isym)
+        except Exception:
+            if R.n_wave_directions == 1:
+                R.symmetry = Symmetry.Circular
+                logger.warning(f"Guessing symmetry for {filename} to be Circular because only one heading is present")
+            else:
+                max_dir = np.max(R.wave_directions)
+
+                if max_dir <= 90:
+                    R.symmetry = Symmetry.XZ_and_YZ
+                    logger.warning(
+                        f"Guessing symmetry for {filename} to be XZ_and_YZ because maximum heading = {max_dir} deg"
+                    )
+                elif max_dir <= 180:
+                    R.symmetry = Symmetry.XZ
+                    logger.warning(
+                        f"Guessing symmetry for {filename} to be XZ (PS/SB) because maximum heading = {max_dir} deg"
+                    )
+                else:
+                    R.symmetry = Symmetry.No
+                    logger.warning(f"Guessing no symmetry for {filename} because maximum heading is {max_dir} deg")
+
+        # check symmetry and warn if not consistent with headings
+        if R.symmetry == Symmetry.XZ:
+            if np.any(R.wave_directions > 180):
+                logger.warning("Symmetry is set to XZ but headings exceed 180 degrees")
+        elif R.symmetry == Symmetry.No and np.any(R.wave_directions > 90) and np.all(R.wave_directions <= 180):
+            logger.warning("Symmetry is not present, but no headings exceeding 180 degrees were found")
 
         try:
             R._check_dimensions()  # self-check

@@ -410,8 +410,39 @@ class Rao:
         except that for sway, roll and yaw a sign change will be applied (phase shift of pi)
 
         """
-        opposite_modes = (MotionMode.SWAY, MotionMode.ROLL, MotionMode.YAW)
-        self._expand_symmetry(lambda direction: -direction, opposite_modes)
+        if self.mode in (
+            MotionMode.SWAY,
+            MotionMode.ROLL,
+            MotionMode.YAW,
+        ):  # ['SWAY','ROLL','YAW']:
+            opposite = True
+        elif self.mode in (
+            MotionMode.SURGE,
+            MotionMode.HEAVE,
+            MotionMode.PITCH,
+        ):  # ['SURGE','HEAVE','PITCH']:
+            opposite = False
+        else:
+            raise ValueError(
+                f"Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {self.mode}"
+            )
+
+        directions = self._data.coords["wave_direction"].values
+
+        for direction in directions:
+            direction_copy = np.mod(-direction, 360)
+            if direction_copy in directions:
+                continue
+
+            sym = self._data.sel(wave_direction=direction)
+            sym.coords["wave_direction"].values = direction_copy
+
+            if opposite:
+                sym["phase"] = np.mod(sym["phase"] + np.pi, 2 * np.pi)
+
+            self._data = xr.concat([self._data, sym], dim="wave_direction")
+
+        self._data = self._data.sortby("wave_direction")
 
     def expand_symmetry_yz(self):
         """Appends equivalent headings considering yz symmetry to the dataset.
@@ -446,7 +477,7 @@ class Rao:
         directions = self._data.coords["wave_direction"].values
 
         for direction in directions:
-            direction_copy = np.mod(direction_mapping(direction), 360)
+            direction_copy = np.mod(180 - direction, 360)
             if direction_copy in directions:
                 continue
 
