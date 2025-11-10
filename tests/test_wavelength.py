@@ -1,6 +1,7 @@
-from mafredo.helpers import wavelength
-from numpy.testing import assert_almost_equal
 import numpy as np
+from numpy.testing import assert_almost_equal
+
+from mafredo.helpers import wavelength
 
 
 def test_wavelength_deep():

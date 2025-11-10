@@ -8,10 +8,9 @@ for convenience.
 
 import logging
 
+import capytaine as cpt
 import numpy as np
 from numpy import pi
-
-import capytaine as cpt
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)-8s: %(message)s")
 bem_solver = cpt.BEMSolver()
@@ -22,15 +21,8 @@ def make_database(body, omegas, wave_directions):
     problems = []
     for wave_direction in wave_directions:
         for omega in omegas:
-            problems += [
-                cpt.RadiationProblem(omega=omega, body=body, radiating_dof=dof)
-                for dof in body.dofs
-            ]
-            problems += [
-                cpt.DiffractionProblem(
-                    omega=omega, body=body, wave_direction=wave_direction
-                )
-            ]
+            problems += [cpt.RadiationProblem(omega=omega, body=body, radiating_dof=dof) for dof in body.dofs]
+            problems += [cpt.DiffractionProblem(omega=omega, body=body, wave_direction=wave_direction)]
     results = [bem_solver.solve(problem) for problem in problems]
     *radiation_results, diffraction_result = results
     dataset = cpt.assemble_dataset(results)
@@ -49,9 +41,7 @@ def generate_boat() -> cpt.FloatingBody:
 
 
 def generate_mesh() -> cpt.FloatingBody:
-    boat = cpt.FloatingBody.from_file(
-        r"C:\data\docker\output.stl", file_format="stl", name="cheetah"
-    )
+    boat = cpt.FloatingBody.from_file(r"C:\data\docker\output.stl", file_format="stl", name="cheetah")
 
     # boat.clip(Plane(normal=(0, 0, 1), point=(0, 0, -0.01)))  # <-- optional, depending on the input mesh
     boat.add_all_rigid_body_dofs()
@@ -97,9 +87,7 @@ if __name__ == "__main__":
 
     body.show()
 
-    dataset = make_database(
-        body=body, omegas=omega, wave_directions=np.linspace(0, pi, 9)
-    )
+    dataset = make_database(body=body, omegas=omega, wave_directions=np.linspace(0, pi, 9))
     print(dataset)
 
     from capytaine.io.xarray import separate_complex_values

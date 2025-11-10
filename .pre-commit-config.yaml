@@ -23,3 +23,4 @@ repos:
       - id: prettier
         args: ["--write"]
         types_or: [javascript, jsx, ts, tsx, json, markdown, yaml, css, scss, html]
+        exclude: ^tests/files/

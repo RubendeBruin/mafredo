@@ -2,18 +2,19 @@
 Tests for to_dict() and from_dict() methods
 """
 
-import numpy as np
 import json
-import sys
 import os
+import sys
+
+import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from numpy.testing import assert_array_almost_equal
 
-from mafredo.rao import Rao
-from mafredo.hyddb1 import Hyddb1
 from mafredo.helpers import MotionMode, Symmetry
+from mafredo.hyddb1 import Hyddb1
+from mafredo.rao import Rao
 
 
 def _xr_var(d: dict, name: str):
@@ -105,25 +106,17 @@ def test_rao_from_dict():
     phase = np.random.random((5, 5)) * np.pi
 
     # Create original RAO
-    original_rao = Rao.create_from_data(
-        directions, omegas, amplitude, phase, MotionMode.ROLL
-    )
+    original_rao = Rao.create_from_data(directions, omegas, amplitude, phase, MotionMode.ROLL)
 
     # Convert to dict and back
     rao_dict = original_rao.to_dict()
     restored_rao = Rao.from_dict(rao_dict)
 
     # Verify data integrity
-    assert_array_almost_equal(
-        original_rao.wave_directions, restored_rao.wave_directions
-    )
+    assert_array_almost_equal(original_rao.wave_directions, restored_rao.wave_directions)
     assert_array_almost_equal(original_rao.omega, restored_rao.omega)
-    assert_array_almost_equal(
-        original_rao["amplitude"].values, restored_rao["amplitude"].values
-    )
-    assert_array_almost_equal(
-        original_rao["phase"].values, restored_rao["phase"].values
-    )
+    assert_array_almost_equal(original_rao["amplitude"].values, restored_rao["amplitude"].values)
+    assert_array_almost_equal(original_rao["phase"].values, restored_rao["phase"].values)
     assert original_rao.mode == restored_rao.mode
 
 
@@ -271,16 +264,14 @@ def test_hyddb1_from_dict():
 
     # Create force RAOs
     directions = np.array([0, 90, 180])
-    for i, mode in enumerate(
-        [
-            MotionMode.SURGE,
-            MotionMode.SWAY,
-            MotionMode.HEAVE,
-            MotionMode.ROLL,
-            MotionMode.PITCH,
-            MotionMode.YAW,
-        ]
-    ):
+    for i, mode in enumerate([
+        MotionMode.SURGE,
+        MotionMode.SWAY,
+        MotionMode.HEAVE,
+        MotionMode.ROLL,
+        MotionMode.PITCH,
+        MotionMode.YAW,
+    ]):
         amplitude = np.random.random((3, 3))
         phase = np.random.random((3, 3)) * np.pi
         hyd._force[i] = Rao.create_from_data(directions, omegas, amplitude, phase, mode)
@@ -303,9 +294,7 @@ def test_hyddb1_from_dict():
             hyd._force[i]["amplitude"].values,
             restored_hyd._force[i]["amplitude"].values,
         )
-        assert_array_almost_equal(
-            hyd._force[i]["phase"].values, restored_hyd._force[i]["phase"].values
-        )
+        assert_array_almost_equal(hyd._force[i]["phase"].values, restored_hyd._force[i]["phase"].values)
         assert hyd._force[i].mode == restored_hyd._force[i].mode
 
 
@@ -343,16 +332,14 @@ def test_hyddb1_dict_json_serialization():
 
     # Create simple force RAOs
     directions = np.array([0, 180])
-    for i, mode in enumerate(
-        [
-            MotionMode.SURGE,
-            MotionMode.SWAY,
-            MotionMode.HEAVE,
-            MotionMode.ROLL,
-            MotionMode.PITCH,
-            MotionMode.YAW,
-        ]
-    ):
+    for i, mode in enumerate([
+        MotionMode.SURGE,
+        MotionMode.SWAY,
+        MotionMode.HEAVE,
+        MotionMode.ROLL,
+        MotionMode.PITCH,
+        MotionMode.YAW,
+    ]):
         amplitude = np.random.random((2, 2))
         phase = np.random.random((2, 2)) * np.pi
         hyd._force[i] = Rao.create_from_data(directions, omegas, amplitude, phase, mode)

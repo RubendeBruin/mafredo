@@ -2,8 +2,8 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from mafredo.helpers import MotionMode
-from mafredo.rao import Rao
 from mafredo.hyddb1 import Hyddb1
+from mafredo.rao import Rao
 
 
 def gimme(data_path):
@@ -20,9 +20,7 @@ def test_load_dhyd(data_path):
 
 
 def test_Rao_read_nc(data_path):
-    test = Rao.create_from_capytaine_wave_force(
-        data_path / "capytaine.nc", MotionMode.ROLL
-    )
+    test = Rao.create_from_capytaine_wave_force(data_path / "capytaine.nc", MotionMode.ROLL)
 
     test.expand_symmetry_xz()
     test.regrid_omega(np.linspace(0, 4, 100))

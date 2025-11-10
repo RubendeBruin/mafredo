@@ -8,14 +8,14 @@ Example of extrapolation of values
 
 from pathlib import Path
 
-
 # the capytaine.nc file must be in the same directory as this script
 file_name = Path(__file__).parent / "capytaine.nc"
 
 try:
-    from mafredo import Hyddb1
-    import numpy as np
     import matplotlib.pyplot as plt
+    import numpy as np
+
+    from mafredo import Hyddb1
 
     # get a RAO
     hyd = Hyddb1.create_from_capytaine(filename=file_name)

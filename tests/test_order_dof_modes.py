@@ -1,6 +1,7 @@
 import xarray as xr
-from mafredo.helpers import dof_names_to_numbers
 from numpy.testing import assert_almost_equal
+
+from mafredo.helpers import dof_names_to_numbers
 
 
 def test_order_dofs(data_path):
