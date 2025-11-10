@@ -587,15 +587,16 @@ class Hyddb1(object):
         import yaml
 
         # Orcaflex exported .yml files contain two "documents", separated by '---' , we want the second one.
-        with open(filename, "r") as stream:
+        with open(filename, "r", encoding="utf-8") as stream:
+            # Cast to list to read all documents before stream goes out of scope
             documents = list(yaml.safe_load_all(stream))
 
         if len(documents) < 1:
             raise ValueError(f"Expected at least one YAML document in '{filename}', ")
 
-        # removed extraction of model outside of with context as unit test failed. Likely because generator object cease to exist as
-        # soon as file is closed, hence may cause fail on fast laptops. Convert to lsit inmediately in with context, extra model outside
-        # also, somehow in the previous version documents[1] was retrieved, but that does not exist. Must problably be 0?
+        if len(documents) > 1:
+            raise ValueError("Expected only one YAML document in '{filename}', is the file encoding correct?")
+
         model = documents[0]
 
         R = Hyddb1()
