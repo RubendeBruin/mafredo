@@ -1,7 +1,8 @@
-import numpy as np
-import pytest
 import os
 import tempfile
+
+import numpy as np
+import pytest
 from numpy.testing import assert_almost_equal
 
 from mafredo.hyddb1 import Hyddb1
@@ -91,9 +92,7 @@ def test_wave_directions(data_path):
 
     from numpy.testing import assert_almost_equal
 
-    assert_almost_equal(
-        hyd.wave_directions, [0.0, 22.5, 45.0, 67.5, 90.0, 112.5, 135.0, 157.5, 180.0]
-    )
+    assert_almost_equal(hyd.wave_directions, [0.0, 22.5, 45.0, 67.5, 90.0, 112.5, 135.0, 157.5, 180.0])
 
 
 def test_n_wave_directions_error():

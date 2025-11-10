@@ -7,17 +7,15 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import os
-import sys
+import contextlib
 import inspect
+import os
 import shutil
-
+import sys
 
 # -- Path setup --------------------------------------------------------------
 
-__location__ = os.path.join(
-    os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe()))
-)
+__location__ = os.path.join(os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe())))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -35,21 +33,17 @@ sys.path.insert(0, os.path.join(__location__, "../src"))
 try:  # for Sphinx >= 1.7
     from sphinx.ext import apidoc
 except ImportError:
-    from sphinx import apidoc
+    from sphinx import apidoc  # type: ignore[reportAttributeAccessIssue]
 
 output_dir = os.path.join(__location__, "api")
 module_dir = os.path.join(__location__, "../src/mafredo")
-try:
+with contextlib.suppress(FileNotFoundError):
     shutil.rmtree(output_dir)
-except FileNotFoundError:
-    pass
 
 try:
     import sphinx
 
-    cmd_line_template = (
-        "sphinx-apidoc --implicit-namespaces -f -o {outputdir} {moduledir}"
-    )
+    cmd_line_template = "sphinx-apidoc --implicit-namespaces -f -o {outputdir} {moduledir}"
     cmd_line = cmd_line_template.format(outputdir=output_dir, moduledir=module_dir)
 
     args = cmd_line.split(" ")
@@ -59,7 +53,7 @@ try:
 
     apidoc.main(args)
 except Exception as e:
-    print("Running `sphinx-apidoc` failed!\n{}".format(e))
+    print(f"Running `sphinx-apidoc` failed!\n{e}")
 
 # -- General configuration ---------------------------------------------------
 
@@ -107,7 +101,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "MaFreDo"
-copyright = "2021, Ruben de Bruin"
+copyright = "2021, Ruben de Bruin"  # noqa: A001
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -255,9 +249,7 @@ latex_elements = {
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [
-    ("index", "user_guide.tex", "MaFreDo Documentation", "Ruben de Bruin", "manual")
-]
+latex_documents = [("index", "user_guide.tex", "MaFreDo Documentation", "Ruben de Bruin", "manual")]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.

@@ -1,6 +1,7 @@
-from mafredo import hyddb1
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
+from mafredo import hyddb1
 
 hyd = hyddb1.Hyddb1()
 
@@ -110,14 +111,12 @@ for i in range(6):
         plt.legend()
 
     ax2 = ax1.twinx()
-    ax2.plot(
-        omegas, np.angle(a), label="phase", color="black", linestyle=":", linewidth=1
-    )
+    ax2.plot(omegas, np.angle(a), label="phase", color="black", linestyle=":", linewidth=1)
 
     if i == 5:
         plt.legend()
 
-plt.suptitle("Incoming wave direction = {}".format(heading))
+plt.suptitle(f"Incoming wave direction = {heading}")
 plt.tight_layout()
 
 plt.show()

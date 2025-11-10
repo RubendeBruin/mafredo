@@ -1,4 +1,4 @@
-from mafredo.hyddb1 import Hyddb1, FrequencyUnit
+from mafredo.hyddb1 import FrequencyUnit, Hyddb1
 
 
 def gimme():

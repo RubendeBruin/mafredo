@@ -1,6 +1,6 @@
-from mafredo import hyddb1
 import matplotlib.pyplot as plt
 
+from mafredo import hyddb1
 
 filename = "cheetah"
 
@@ -8,7 +8,7 @@ hyd = hyddb1.Hyddb1()
 
 print("reading data")
 
-hyd.create_from_capytaine(r"{}.nc".format(filename))
+hyd.create_from_capytaine(rf"{filename}.nc")
 
 plt.subplots(2, 3)
 for i in range(6):
@@ -19,4 +19,4 @@ for i in range(6):
 plt.show()
 
 
-hyd.save_as("{}.dhyd".format(filename))
+hyd.save_as(f"{filename}.dhyd")

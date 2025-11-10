@@ -1,6 +1,5 @@
 from numpy.testing import assert_allclose
 
-
 from mafredo.hyddb1 import Hyddb1
 
 
@@ -26,9 +25,7 @@ def test_write_hyd_and_read_it_again(data_path):
         F0 = hyd._force[i]
         Fc = copy._force[i]
 
-        assert_allclose(
-            F0._data.amplitude.values, Fc._data.amplitude.values, rtol=1e-3, atol=1
-        )
+        assert_allclose(F0._data.amplitude.values, Fc._data.amplitude.values, rtol=1e-3, atol=1)
 
     #
     # hyd.plot(phase=False)

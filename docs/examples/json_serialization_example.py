@@ -10,8 +10,10 @@ This example shows how to:
 """
 
 import json
+
 import numpy as np
-from mafredo import Rao, Hyddb1, MotionMode, Symmetry
+
+from mafredo import Hyddb1, MotionMode, Rao, Symmetry
 
 
 def create_example_rao():
@@ -41,9 +43,7 @@ def create_example_hyddb1():
 
     for i, omega in enumerate(omegas):
         # Simple diagonal matrices with frequency-dependent values
-        mass_data[i] = np.diag([1000, 1000, 1000, 50000, 50000, 50000]) * (
-            1 + omega * 0.1
-        )
+        mass_data[i] = np.diag([1000, 1000, 1000, 50000, 50000, 50000]) * (1 + omega * 0.1)
         damping_data[i] = np.diag([100, 100, 100, 5000, 5000, 5000]) * omega
 
     hyd._mass = xr.DataArray(
@@ -68,16 +68,14 @@ def create_example_hyddb1():
 
     # Create force RAOs for each DOF
     directions = np.array([0, 90, 180])
-    for i, mode in enumerate(
-        [
-            MotionMode.SURGE,
-            MotionMode.SWAY,
-            MotionMode.HEAVE,
-            MotionMode.ROLL,
-            MotionMode.PITCH,
-            MotionMode.YAW,
-        ]
-    ):
+    for i, mode in enumerate([
+        MotionMode.SURGE,
+        MotionMode.SWAY,
+        MotionMode.HEAVE,
+        MotionMode.ROLL,
+        MotionMode.PITCH,
+        MotionMode.YAW,
+    ]):
         amplitude = np.random.random((len(omegas), len(directions))) * 1000
         phase = np.random.random((len(omegas), len(directions))) * np.pi
         hyd._force[i] = Rao.create_from_data(directions, omegas, amplitude, phase, mode)
@@ -92,9 +90,7 @@ def example_rao_json():
 
     # Create an example RAO
     rao = create_example_rao()
-    print(
-        f"Original RAO: {rao.n_frequencies} frequencies, {rao.n_wave_directions} directions"
-    )
+    print(f"Original RAO: {rao.n_frequencies} frequencies, {rao.n_wave_directions} directions")
 
     # Convert to dictionary
     rao_dict = rao.to_dict()
@@ -106,19 +102,15 @@ def example_rao_json():
     print("Saved to example_rao.json")
 
     # Load from JSON file
-    with open("example_rao.json", "r") as f:
+    with open("example_rao.json") as f:
         loaded_dict = json.load(f)
 
     restored_rao = Rao.from_dict(loaded_dict)
-    print(
-        f"Restored RAO: {restored_rao.n_frequencies} frequencies, {restored_rao.n_wave_directions} directions"
-    )
+    print(f"Restored RAO: {restored_rao.n_frequencies} frequencies, {restored_rao.n_wave_directions} directions")
     print(f"Mode: {restored_rao.mode}")
 
     # Verify they're the same
-    np.testing.assert_array_almost_equal(
-        rao["amplitude"].values, restored_rao["amplitude"].values
-    )
+    np.testing.assert_array_almost_equal(rao["amplitude"].values, restored_rao["amplitude"].values)
     print("✅ Data integrity verified!")
 
 
@@ -128,9 +120,7 @@ def example_hyddb1_json():
 
     # Create an example Hyddb1
     hyd = create_example_hyddb1()
-    print(
-        f"Original Hyddb1: {hyd.n_frequencies} frequencies, {hyd.n_wave_directions} directions"
-    )
+    print(f"Original Hyddb1: {hyd.n_frequencies} frequencies, {hyd.n_wave_directions} directions")
 
     # Convert to dictionary
     hyd_dict = hyd.to_dict()
@@ -142,13 +132,11 @@ def example_hyddb1_json():
     print("Saved to example_hyddb1.json")
 
     # Load from JSON file
-    with open("example_hyddb1.json", "r") as f:
+    with open("example_hyddb1.json") as f:
         loaded_dict = json.load(f)
 
     restored_hyd = Hyddb1.from_dict(loaded_dict)
-    print(
-        f"Restored Hyddb1: {restored_hyd.n_frequencies} frequencies, {restored_hyd.n_wave_directions} directions"
-    )
+    print(f"Restored Hyddb1: {restored_hyd.n_frequencies} frequencies, {restored_hyd.n_wave_directions} directions")
     print(f"Symmetry: {restored_hyd._symmetry}")
 
     # Verify they're the same
@@ -197,11 +185,11 @@ def example_combined_data():
     print("Saved combined data to combined_vessel_data.json")
 
     # Load and extract hydrodynamic data
-    with open("combined_vessel_data.json", "r") as f:
+    with open("combined_vessel_data.json") as f:
         loaded_combined = json.load(f)
 
-    print(f"Project: {loaded_combined['project_info']['name']}")
-    print(f"Vessel length: {loaded_combined['vessel_properties']['length']} m")
+    print(f"Project: {loaded_combined["project_info"]["name"]}")
+    print(f"Vessel length: {loaded_combined["vessel_properties"]["length"]} m")
 
     # Extract and restore hydrodynamic data
     restored_hyd = Hyddb1.from_dict(loaded_combined["hydrodynamic_data"])

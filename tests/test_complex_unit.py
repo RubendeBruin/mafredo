@@ -1,7 +1,8 @@
-from mafredo.rao import _complex_unit_add, _complex_unit_delete, _complex_unit_to_phase
-import xarray as xr
 import numpy as np
+import xarray as xr
 from numpy.testing import assert_allclose
+
+from mafredo.rao import _complex_unit_add, _complex_unit_delete, _complex_unit_to_phase
 
 
 def test_raw():

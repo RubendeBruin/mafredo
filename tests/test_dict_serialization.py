@@ -1,7 +1,9 @@
-import numpy as np
 import json
+
+import numpy as np
 from numpy.testing import assert_allclose
-from mafredo import Rao, Hyddb1, MotionMode, Symmetry
+
+from mafredo import Hyddb1, MotionMode, Rao, Symmetry
 
 
 def test_rao_dict_serialization():
@@ -13,9 +15,7 @@ def test_rao_dict_serialization():
     phase = np.random.random((3, 3)) * np.pi
 
     # Create original RAO
-    original_rao = Rao.create_from_data(
-        directions, omegas, amplitude, phase, MotionMode.HEAVE
-    )
+    original_rao = Rao.create_from_data(directions, omegas, amplitude, phase, MotionMode.HEAVE)
 
     # Convert to dict and JSON
     rao_dict = original_rao.to_dict()
@@ -67,16 +67,14 @@ def test_hyddb1_dict_serialization():
 
     # Create force RAOs for each DOF
     directions = np.array([0, 90, 180])
-    for i, mode in enumerate(
-        [
-            MotionMode.SURGE,
-            MotionMode.SWAY,
-            MotionMode.HEAVE,
-            MotionMode.ROLL,
-            MotionMode.PITCH,
-            MotionMode.YAW,
-        ]
-    ):
+    for i, mode in enumerate([
+        MotionMode.SURGE,
+        MotionMode.SWAY,
+        MotionMode.HEAVE,
+        MotionMode.ROLL,
+        MotionMode.PITCH,
+        MotionMode.YAW,
+    ]):
         amplitude = np.random.random((3, 3))
         phase = np.random.random((3, 3)) * np.pi
         hyd._force[i] = Rao.create_from_data(directions, omegas, amplitude, phase, mode)
@@ -104,9 +102,7 @@ def test_hyddb1_dict_serialization():
             hyd._force[i]["amplitude"].values,
             restored_hyd._force[i]["amplitude"].values,
         )
-        assert_allclose(
-            hyd._force[i]["phase"].values, restored_hyd._force[i]["phase"].values
-        )
+        assert_allclose(hyd._force[i]["phase"].values, restored_hyd._force[i]["phase"].values)
         assert hyd._force[i].mode == restored_hyd._force[i].mode
 
 

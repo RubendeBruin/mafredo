@@ -1,11 +1,11 @@
 import xarray as xr
-from mafredo.helpers import dof_names_to_numbers
 from numpy.testing import assert_almost_equal
+
+from mafredo.helpers import dof_names_to_numbers
 
 
 def test_order_dofs(data_path):
-    ds = xr.open_dataarray(
-        data_path / "barge_100_30_4.dhyd", group="mass")
+    ds = xr.open_dataarray(data_path / "barge_100_30_4.dhyd", group="mass")
     fixed = dof_names_to_numbers(ds)
 
     expected = [

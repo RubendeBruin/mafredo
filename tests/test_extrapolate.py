@@ -1,15 +1,14 @@
-import xarray as xr
 import numpy as np
-from mafredo.rao import Rao
+import xarray as xr
+from numpy.testing import assert_allclose
+
 from mafredo.helpers import MotionMode
 from mafredo.hyddb1 import Hyddb1
-from numpy.testing import assert_allclose
+from mafredo.rao import Rao
 
 
 def test_extrapolate(data_path):
-    test = Rao.create_from_capytaine_wave_force(
-        data_path / "capytaine.nc", MotionMode.ROLL
-    )
+    test = Rao.create_from_capytaine_wave_force(data_path / "capytaine.nc", MotionMode.ROLL)
 
     test.expand_symmetry_xz()
     test.regrid_omega(np.linspace(0, 4, 100))
@@ -57,8 +56,6 @@ def test_extrapolate_below_heading_range():
             "omega": [0, 4.0],
         },
     )
-
-    rao._data
 
     rao.add_direction(0)
 
