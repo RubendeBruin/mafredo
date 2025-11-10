@@ -7,10 +7,10 @@ urls = { Homepage = "https://github.com/RubendeBruin/mafredo", Documentation = "
 name = "MaFreDo"
 description = "Marine Frequency Domain"
 readme = { file = "README.rst", content-type = "text/x-rst" }
-authors = [{ name = "Ruben de Bruin", email = "rubenebruin@gmail.com" }]
+authors = [{ name = "Ruben de Bruin", email = "rubendebruin@gmail.com" }]
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
-dynamic = ["version"] # versie komt uit git via setuptools-scm
+dynamic = ["version"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
@@ -19,15 +19,14 @@ classifiers = [
 dependencies = [
     "capytaine>=2.3",
     "matplotlib>=3.10.7",
-    "netcdf4>=1.7.2",
-    "numpy>=2.2.6",
+    "h5netcdf>=1.6.3",
+    "numpy>=2",
     "pyyaml>=6.0.3",
     "xarray>=2025.6.1",
 ]
 
 [dependency-groups]
 dev = [
-    "pyside6>=6.10.0",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
     "setuptools>=80.9.0",
