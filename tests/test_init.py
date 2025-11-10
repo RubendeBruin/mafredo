@@ -1,7 +1,9 @@
-from mafredo import *
+from mafredo import Rao, Hyddb1
+
 
 def test_rao():
-    r = Rao()
+    _r = Rao()
+
 
 def test_hyddb1():
-    h = Hyddb1()
+    _h = Hyddb1()
