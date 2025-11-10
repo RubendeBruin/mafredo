@@ -437,86 +437,6 @@ class Hyddb1:
         return R
 
     @staticmethod
-    def _parse_hyd_line(line, data):
-        """Helper function to parse a single line of a .hyd file."""
-        keyword = line[:10]
-        values = [line[10 * i + 10 : 10 * i + 20] for i in range(7)]
-
-        if "PARA" in keyword:
-            data["n_head"] = int(values[1])
-            sym = int(values[2])
-            if sym == 1:
-                data["symmetry"] = Symmetry.XZ
-            elif sym == 2:
-                data["symmetry"] = Symmetry.XZ_and_YZ
-            else:
-                data["symmetry"] = Symmetry.No
-        elif "REFS" in keyword:
-            data["hyd_info"]["water_depth"] = float(values[0])
-            data["hyd_info"]["body_draft"] = float(values[1])
-            data["hyd_info"]["waterline"] = float(values[2])
-        elif "SPRING" in keyword:
-            data["hyd_info"]["disp_m3"] = float(values[0])
-            data["hyd_info"]["Awl_m2"] = float(values[1])
-            data["hyd_info"]["COFX_m"] = float(values[2])
-            data["hyd_info"]["COBX_m"] = float(values[3])
-            data["hyd_info"]["KMT_m"] = float(values[4])
-            data["hyd_info"]["KML_m"] = float(values[5])
-        elif "OMEGA" in keyword:
-            data["omegas"].append(float(values[0]))
-        elif "ADMAS" in keyword:
-            data["admas"].append([float(v) for v in values[:6]])
-            if len(data["admas"]) == 6:
-                data["admasses"].append(np.array(data["admas"], dtype=float))
-                data["admas"] = []
-        elif "BDAMP" in keyword:
-            data["bdamp"].append([float(v) for v in values[:6]])
-            if len(data["bdamp"]) == 6:
-                data["bdamps"].append(np.array(data["bdamp"], dtype=float))
-                data["bdamp"] = []
-        elif "WDIR" in keyword:
-            data["wdirs"].append(float(values[0]))
-        elif "FAMP" in keyword:
-            data["famp"].append([float(v) for v in values[:6]])
-            if len(data["famp"]) == data["n_head"]:
-                data["famps"].append(np.array(data["famp"], dtype=float))
-                data["famp"] = []
-        elif "FEPS" in keyword:
-            data["feps"].append([float(v) for v in values[:6]])
-            if len(data["feps"]) == data["n_head"]:
-                data["fepss"].append(np.array(data["feps"], dtype=float))
-                data["feps"] = []
-        elif "IDENT" in keyword:
-            data["not_parsed"].append(line)
-        else:
-            data["not_parsed"].append(line)
-
-    @staticmethod
-    def _read_hyd_file(filename):
-        """Reads and parses the entire .hyd file."""
-        data = {
-            "not_parsed": [],
-            "omegas": [],
-            "admasses": [],
-            "bdamps": [],
-            "wdirs": [],
-            "famps": [],
-            "fepss": [],
-            "admas": [],
-            "bdamp": [],
-            "famp": [],
-            "feps": [],
-            "hyd_info": {},
-            "n_head": 0,
-            "symmetry": Symmetry.No,
-        }
-        with open(filename) as f:
-            for line in f.readlines():
-                line = line.strip("\n")
-                Hyddb1._parse_hyd_line(line, data)
-        return data
-
-    @staticmethod
     def create_from_hyd(filename):
         """Load from the MARIN .hyd format
 
@@ -535,12 +455,108 @@ class Hyddb1:
         Returns:
             A freshly created hydrodynamic database
         """
-        data = Hyddb1._read_hyd_file(filename)
-        R = Hyddb1()
-        R.symmetry = data["symmetry"]
+        not_parsed = []
 
-        famps = np.array(data["famps"])
-        fepss = np.array(data["fepss"])
+        omegas = []
+        admas = []
+        admasses = []
+        bdamp = []
+        bdamps = []
+        wdirs = []
+
+        famp = []
+        famps = []  # iOmega, iHeading, iMode
+        feps = []
+        fepss = []  # iOmega, iHeading, iMode
+
+        hyd_info = {}
+
+        R = Hyddb1()
+
+        with open(filename) as f:
+            for line in f.readlines():
+                line = line.strip("\n")  # remove newline characters
+
+                # split into sections with length 10
+                keyword = line[:10]
+
+                if "IDENT " in keyword:
+                    not_parsed.append(line)
+                    continue  # skip ident lines
+
+                values = [line[10 * i + 10 : 10 * i + 20] for i in range(7)]
+
+                if "PARA " in keyword:
+                    _n_freq = int(values[0])
+                    n_head = int(values[1])
+                    sym = int(values[2])
+
+                    if sym == 0:
+                        R.symmetry = Symmetry.No
+                    elif sym == 1:
+                        R.symmetry = Symmetry.XZ
+                    elif sym == 2:
+                        R.symmetry = Symmetry.XZ_and_YZ
+                    else:
+                        raise ValueError(f"Unknonwn symmetry value {sym}")
+
+                elif "REFS " in keyword:
+                    hyd_info["water_depth"] = float(values[0])
+                    hyd_info["body_draft"] = float(values[1])
+                    hyd_info["waterline"] = float(values[2])
+
+                elif "SPRING " in keyword:
+                    hyd_info["disp_m3"] = float(values[0])
+                    hyd_info["Awl_m2"] = float(values[1])
+                    hyd_info["COFX_m"] = float(values[2])
+                    hyd_info["COBX_m"] = float(values[3])
+                    hyd_info["KMT_m"] = float(values[4])
+                    hyd_info["KML_m"] = float(values[5])
+
+                elif "OMEGA " in keyword:
+                    omega = float(values[0])
+                    omegas.append(omega)
+                elif "ADMAS " in keyword:
+                    admas.append([float(v) for v in values[:6]])
+                    if len(admas) == 6:
+                        admasses.append(np.array(admas, dtype=float))
+                        admas = []
+                elif "BDAMP " in keyword:
+                    bdamp.append([float(v) for v in values[:6]])
+                    if len(bdamp) == 6:
+                        bdamps.append(np.array(bdamp, dtype=float))
+                        bdamp = []
+
+                elif "WDIR " in keyword:
+                    wdirs.append(float(values[0]))
+
+                elif "FAMP " in keyword:
+                    famp.append([float(v) for v in values[:6]])
+
+                    if len(famp) == n_head:
+                        famps.append(np.array(famp, dtype=float))
+                        famp = []
+
+                elif "FEPS " in keyword:
+                    feps.append([float(v) for v in values[:6]])
+
+                    if len(feps) == n_head:
+                        fepss.append(np.array(feps, dtype=float))
+                        feps = []
+
+                else:
+                    not_parsed.append(line)
+
+        # now we have
+        # - wdirs
+        # - omegas
+        #
+        # admasses and bdamps [ iOmega, iDof, iDof ]
+        # famps and fepss     [ iOmega, iHeading, iMode ]
+        #
+
+        famps = np.array(famps)
+        fepss = np.array(fepss)
 
         famps = np.swapaxes(famps, 0, 2)  # iMode, iHeading, iOmega
         fepss = np.swapaxes(fepss, 0, 2)  # iMode, iHeading, iOmega
@@ -549,19 +565,18 @@ class Hyddb1:
         fepss = np.swapaxes(fepss, 1, 2)  # iMode, iOmega, iHeading
 
         # cut headings axis to only the first unique entries
-        wdirs = data["wdirs"][: data["n_head"]]
+        wdirs = wdirs[:n_head]
 
         R.set_data(
-            omega=data["omegas"],
-            added_mass=data["admasses"],
-            damping=data["bdamps"],
+            omega=omegas,
+            added_mass=admasses,
+            damping=bdamps,
             directions=wdirs,
             force_amps=famps,
             force_phase_rad=(np.pi / 180) * fepss,
         )
 
-        hyd_info = data["hyd_info"]
-        hyd_info["not parsed"] = data["not_parsed"]
+        hyd_info["not parsed"] = not_parsed
         R.hyd_reader_info = hyd_info
 
         try:

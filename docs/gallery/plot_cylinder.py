@@ -26,5 +26,6 @@ try:
     # and finally plot
     cylinder.plot()
 
-except Exception:
+except Exception as e:
+    print(f"An error occurred: {e}")
     pass  # read-the-docs
