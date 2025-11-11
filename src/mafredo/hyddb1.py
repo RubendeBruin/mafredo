@@ -398,16 +398,22 @@ class Hyddb1(object):
         See Also:
             Rao.wave_force_from_capytaine
         """
-        R = Hyddb1()
+
 
         from capytaine.io.xarray import merge_complex_values
-
         dataset = merge_complex_values(xr.open_dataset(filename))
+
+        return Hyddb1.create_from_capytaine_dataset(dataset)
+
+    @staticmethod
+    def create_from_capytaine_dataset(dataset):
+
+        R = Hyddb1()
 
         R._force.clear()
 
         for mode in MotionMode:
-            r = Rao.create_from_capytaine_wave_force(filename, mode)
+            r = Rao.create_from_capytaine_wave_force_dataset(dataset, mode)
             r.scale(R._N_to_kN)
             R._force.append(r)
 
@@ -417,7 +423,7 @@ class Hyddb1(object):
         try:
             R._check_dimensions()  # self-check
         except ValueError as e:
-            warn(f"Error when reading hydrodynamic data from {filename}: {e}")
+            warn(f"Error when reading hydrodynamic data from provided dataset: {e}")
 
         return R
 
