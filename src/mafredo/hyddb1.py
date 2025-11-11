@@ -1,19 +1,17 @@
 from typing import Literal
 from warnings import warn
-
 import matplotlib.pyplot as plt
-import numpy as np
 import xarray as xr
-
-from mafredo.helpers import (
-    FrequencyUnit,
-    MotionMode,
-    MotionModeToStr,
-    Symmetry,
-    dof_names_to_numbers,
-    expand_omega_dim_const,
-)
+import numpy as np
 from mafredo.rao import Rao
+from mafredo.helpers import (
+    expand_omega_dim_const,
+    dof_names_to_numbers,
+    MotionMode,
+    Symmetry,
+    MotionModeToStr,
+    FrequencyUnit,
+)
 
 
 class Hyddb1(object):
@@ -404,14 +402,15 @@ class Hyddb1(object):
             Rao.wave_force_from_capytaine
         """
 
-        from capytaine.io.xarray import merge_complex_values
 
+        from capytaine.io.xarray import merge_complex_values
         dataset = merge_complex_values(xr.open_dataset(filename))
 
         return Hyddb1.create_from_capytaine_dataset(dataset)
 
     @staticmethod
     def create_from_capytaine_dataset(dataset):
+
         R = Hyddb1()
 
         R._force.clear()
@@ -605,9 +604,7 @@ class Hyddb1(object):
             raise ValueError(f"Expected at least one YAML document in '{filename}', ")
 
         if len(documents) > 1:
-            raise ValueError(
-                "Expected only one YAML document in '{filename}', is the file encoding correct?"
-            )
+            raise ValueError("Expected only one YAML document in '{filename}', is the file encoding correct?")
 
         model = documents[0]
 
