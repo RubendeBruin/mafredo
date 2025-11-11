@@ -255,23 +255,25 @@ class Hyddb1(object):
         self._mass = newmass
         self._damping = newdamping
 
-    def save_as(self, filename):
+    def save_as(
+        self, filename, engine: str = "h5netcdf"
+    ):
         """Saves the contents of the database using the netcdf format.
 
         See Also:
             load_from
         """
-        self._mass.to_netcdf(filename, mode="w", group="mass")
-        self._damping.to_netcdf(filename, mode="a", group="damping")
+        self._mass.to_netcdf(filename, mode="w", group="mass", engine=engine)
+        self._damping.to_netcdf(filename, mode="a", group="damping", engine=engine)
 
         for i, mode in enumerate(MotionMode):
             self._force[i].to_xarray_nocomplex().to_netcdf(
-                filename, mode="a", group=MotionModeToStr(mode)
+                filename, mode="a", group=MotionModeToStr(mode), engine=engine
             )
 
         info = xr.DataArray()
         info["symmetry"] = self.symmetry.value
-        info.to_netcdf(filename, mode="a", group="info")
+        info.to_netcdf(filename, mode="a", group="info", engine=engine)
 
     def to_dict(self):
         """Converts the Hyddb1 to a dictionary representation that can be serialized to JSON.
