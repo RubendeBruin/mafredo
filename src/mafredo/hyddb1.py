@@ -1,4 +1,3 @@
-from typing import Literal
 from warnings import warn
 import matplotlib.pyplot as plt
 import xarray as xr
