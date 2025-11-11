@@ -1,16 +1,19 @@
+from typing import Literal
 from warnings import warn
+
 import matplotlib.pyplot as plt
-import xarray as xr
 import numpy as np
-from mafredo.rao import Rao
+import xarray as xr
+
 from mafredo.helpers import (
-    expand_omega_dim_const,
-    dof_names_to_numbers,
-    MotionMode,
-    Symmetry,
-    MotionModeToStr,
     FrequencyUnit,
+    MotionMode,
+    MotionModeToStr,
+    Symmetry,
+    dof_names_to_numbers,
+    expand_omega_dim_const,
 )
+from mafredo.rao import Rao
 
 
 class Hyddb1(object):
@@ -255,23 +258,25 @@ class Hyddb1(object):
         self._mass = newmass
         self._damping = newdamping
 
-    def save_as(self, filename):
+    def save_as(
+        self, filename, engine: Literal["h5netcdf", "netcdf4", "scipy"] = "h5netcdf"
+    ):
         """Saves the contents of the database using the netcdf format.
 
         See Also:
             load_from
         """
-        self._mass.to_netcdf(filename, mode="w", group="mass")
-        self._damping.to_netcdf(filename, mode="a", group="damping")
+        self._mass.to_netcdf(filename, mode="w", group="mass", engine=engine)
+        self._damping.to_netcdf(filename, mode="a", group="damping", engine=engine)
 
         for i, mode in enumerate(MotionMode):
             self._force[i].to_xarray_nocomplex().to_netcdf(
-                filename, mode="a", group=MotionModeToStr(mode)
+                filename, mode="a", group=MotionModeToStr(mode), engine=engine
             )
 
         info = xr.DataArray()
         info["symmetry"] = self.symmetry.value
-        info.to_netcdf(filename, mode="a", group="info")
+        info.to_netcdf(filename, mode="a", group="info", engine=engine)
 
     def to_dict(self):
         """Converts the Hyddb1 to a dictionary representation that can be serialized to JSON.
@@ -399,15 +404,14 @@ class Hyddb1(object):
             Rao.wave_force_from_capytaine
         """
 
-
         from capytaine.io.xarray import merge_complex_values
+
         dataset = merge_complex_values(xr.open_dataset(filename))
 
         return Hyddb1.create_from_capytaine_dataset(dataset)
 
     @staticmethod
     def create_from_capytaine_dataset(dataset):
-
         R = Hyddb1()
 
         R._force.clear()
@@ -601,7 +605,9 @@ class Hyddb1(object):
             raise ValueError(f"Expected at least one YAML document in '{filename}', ")
 
         if len(documents) > 1:
-            raise ValueError("Expected only one YAML document in '{filename}', is the file encoding correct?")
+            raise ValueError(
+                "Expected only one YAML document in '{filename}', is the file encoding correct?"
+            )
 
         model = documents[0]
 
