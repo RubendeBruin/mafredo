@@ -256,7 +256,7 @@ class Hyddb1(object):
         self._damping = newdamping
 
     def save_as(
-        self, filename, engine: Literal["h5netcdf", "netcdf4", "scipy"] = "h5netcdf"
+        self, filename, engine: str = "h5netcdf"
     ):
         """Saves the contents of the database using the netcdf format.
 
