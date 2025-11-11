@@ -276,11 +276,16 @@ class Rao(object):
             _test.wave_force_from_capytaine(r"capytaine.nc", MotionMode.HEAVE)
 
         """
-        r = Rao()
+
 
         from capytaine.io.xarray import merge_complex_values
-
         dataset = merge_complex_values(xr.open_dataset(filename))
+
+        return Rao.create_from_capytaine_wave_force_dataset(dataset, mode)
+
+    @staticmethod
+    def create_from_capytaine_wave_force_dataset(dataset, mode: MotionMode):
+        r = Rao()
 
         wave_direction = dataset["wave_direction"] * (180 / np.pi)  # convert rad to deg
         dataset = dataset.assign_coords(wave_direction=wave_direction)
