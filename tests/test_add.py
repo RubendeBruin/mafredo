@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from numpy.testing import assert_allclose
 
 from mafredo.hyddb1 import Hyddb1
-
 
 # ----- add frequencies ----
 
@@ -76,9 +76,7 @@ def test_add_database(data_path: Path) -> None:
     # First create the object from local test files (tests/files)
     cylinder = Hyddb1.create_from_capytaine(data_path / "open_cylinder.nc")
     cylinder_refined = Hyddb1.create_from_capytaine(data_path / "open_cylinder_2.nc")
-    cylinder_further_refined = Hyddb1.create_from_capytaine(
-        data_path / "open_cylinder_3.nc"
-    )
+    cylinder_further_refined = Hyddb1.create_from_capytaine(data_path / "open_cylinder_3.nc")
 
     # merge
     cylinder.add(cylinder_refined)

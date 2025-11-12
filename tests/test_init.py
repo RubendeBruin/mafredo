@@ -1,4 +1,4 @@
-from mafredo import Rao, Hyddb1
+from mafredo import Hyddb1, Rao
 
 
 def test_rao():

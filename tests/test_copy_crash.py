@@ -1,6 +1,6 @@
-import pytest
 import xarray as xr
-from mafredo import Hyddb1, Rao, MotionMode
+
+from mafredo import Hyddb1
 
 
 def test_copy_crash(data_path):

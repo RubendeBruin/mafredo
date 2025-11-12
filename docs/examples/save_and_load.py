@@ -1,6 +1,5 @@
 from mafredo import hyddb1
 
-
 filename = r"c:\data\temp.nc"
 
 hyd = hyddb1.Hyddb1()

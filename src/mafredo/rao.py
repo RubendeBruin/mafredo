@@ -1,12 +1,13 @@
-import xarray as xr
 import numpy as np
-from mafredo.helpers import (
-    expand_omega_dim_const,
-    expand_direction_to_full_range,
-    FrequencyUnit,
-)
-from mafredo.helpers import MotionMode, MotionModeToStr
+import xarray as xr
 
+from mafredo.helpers import (
+    FrequencyUnit,
+    MotionMode,
+    MotionModeToStr,
+    expand_direction_to_full_range,
+    expand_omega_dim_const,
+)
 
 __license__ = "mpl2"
 
@@ -33,7 +34,7 @@ def _complex_unit_to_phase(data):
 # -----------------
 
 
-class Rao(object):
+class Rao:
     """
     RAO
     =====
@@ -235,12 +236,8 @@ class Rao(object):
         """
 
         # check that the data is consistent
-        assert (
-            len(omegas) == amplitude.shape[0]
-        ), "Number of frequencies and amplitude data do not match"
-        assert (
-            len(directions) == amplitude.shape[1]
-        ), "Number of headings and amplitude data do not match"
+        assert len(omegas) == amplitude.shape[0], "Number of frequencies and amplitude data do not match"
+        assert len(directions) == amplitude.shape[1], "Number of headings and amplitude data do not match"
         assert amplitude.shape == phase.shape, "Amplitude and phase data do not match"
 
         r = Rao()
@@ -277,8 +274,8 @@ class Rao(object):
 
         """
 
-
         from capytaine.io.xarray import merge_complex_values
+
         dataset = merge_complex_values(xr.open_dataset(filename))
 
         return Rao.create_from_capytaine_wave_force_dataset(dataset, mode)
@@ -291,9 +288,7 @@ class Rao(object):
         dataset = dataset.assign_coords(wave_direction=wave_direction)
 
         if "excitation_force" not in dataset:
-            dataset["excitation_force"] = (
-                dataset["Froude_Krylov_force"] + dataset["diffraction_force"]
-            )
+            dataset["excitation_force"] = dataset["Froude_Krylov_force"] + dataset["diffraction_force"]
 
         cmode = MotionModeToStr(mode)
 
@@ -382,11 +377,7 @@ class Rao(object):
         self.add_direction(wave_direction)  # for linear interpolation the
         self.add_frequency(omega)  # order of interpolations does not matter
 
-        amp = (
-            self._data["amplitude"]
-            .sel(wave_direction=wave_direction, omega=omega)
-            .values
-        )
+        amp = self._data["amplitude"].sel(wave_direction=wave_direction, omega=omega).values
         cu = self["complex_unit"].sel(wave_direction=wave_direction, omega=omega).values
 
         return cu * amp
@@ -438,9 +429,7 @@ class Rao(object):
             opposite = False
         else:
             raise ValueError(
-                "Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}".format(
-                    self.mode
-                )
+                f"Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {self.mode}"
             )
 
         directions = self._data.coords["wave_direction"].values
@@ -475,9 +464,7 @@ class Rao(object):
             opposite = False
         else:
             raise ValueError(
-                "Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {}".format(
-                    self.mode
-                )
+                f"Unknown setting for mode; we need mode to determine how to appy symmetry. Mode setting = {self.mode}"
             )
 
         directions = self._data.coords["wave_direction"].values
@@ -563,7 +550,7 @@ class Rao(object):
 
         for i, heading in enumerate(headings):
             data = self._data[what].sel(wave_direction=heading).values
-            ax.plot(x, data, label="{}".format(heading))
+            ax.plot(x, data, label=f"{heading}")
 
         if self.n_wave_directions > 1:
             ax.legend()
@@ -573,9 +560,7 @@ class Rao(object):
         ax.set_ylabel("Amplitude")
         ax.set_xlabel(f"Frequency [{unit_label}]")
 
-    def plot_surface(
-        self, what="amplitude", ax=None, unit=FrequencyUnit.rad_s, cmap=None
-    ):
+    def plot_surface(self, what="amplitude", ax=None, unit=FrequencyUnit.rad_s, cmap=None):
         """Plots amplitude or phase as a surface plot"""
 
         if self.n_wave_directions == 1:
