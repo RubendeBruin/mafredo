@@ -1,8 +1,68 @@
 [build-system]
-# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
-requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5", "wheel"]
+requires = ["setuptools>=64", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
+[project]
+urls = { Homepage = "https://github.com/RubendeBruin/mafredo", Documentation = "https://open-ocean.org/mafredo" }
+name = "MaFreDo"
+description = "Marine Frequency Domain"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+authors = [{ name = "Ruben de Bruin", email = "rubendebruin@gmail.com" }]
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+]
+dependencies = [
+    "capytaine>=2.3",
+    "matplotlib>=3.10.7",
+    "h5netcdf>=1.6.3",
+    "numpy>=2",
+    "pyyaml>=6.0.3",
+    "xarray>=2025.6.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "setuptools>=80.9.0",
+    "setuptools-scm>=9.2.0",
+]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+license-files = ["LICENSE"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests"]
+
 [tool.setuptools_scm]
-# See configuration details in https://github.com/pypa/setuptools_scm
-version_scheme = "no-guess-dev"
+version_scheme = "post-release"
+local_scheme = "node-and-date"
+
+[tool.pytest.ini_options]
+addopts = ["--cov=src/mafredo", "--cov-report=term-missing"]
+norecursedirs = ["dist", "build", ".tox"]
+testpaths = ["tests"]
+
+
+[tool.flake8]
+max_line_length = 88
+extend_ignore = ["E203", "W503"]
+exclude = [".tox", "build", "dist", ".eggs", "docs/conf.py"]
+
+[tool.wheel]
+universal = true
+
+[tool.devpi.upload]
+no_vcs = true
+formats = ["bdist_wheel"]
