@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
 from importlib.metadata import PackageNotFoundError, version
-from mafredo.helpers import FrequencyUnit, Symmetry, MotionMode
+
+from mafredo.helpers import FrequencyUnit, MotionMode, Symmetry
 from mafredo.hyddb1 import Hyddb1
 from mafredo.rao import Rao
 

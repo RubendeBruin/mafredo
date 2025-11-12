@@ -1,7 +1,8 @@
+from enum import Enum
+
 import numpy as np
 import xarray as xr
 from scipy.optimize import fsolve
-from enum import Enum
 
 
 class FrequencyUnit(Enum):
@@ -163,16 +164,12 @@ def expand_omega_dim_const(dataset, new_omega):
     """
 
     if min(new_omega) < min(dataset["omega"].values):
-        new_minimum = dataset.sel(
-            omega=min(dataset["omega"].values)
-        )  # get the lowest entry
+        new_minimum = dataset.sel(omega=min(dataset["omega"].values))  # get the lowest entry
         new_minimum["omega"] = min(new_omega)  # change coordinate
         dataset = xr.concat([dataset, new_minimum], dim="omega")  # and concat
 
     if max(new_omega) > max(dataset["omega"].values):
-        new_max = dataset.sel(
-            omega=max(dataset["omega"].values)
-        )  # get the highest entry
+        new_max = dataset.sel(omega=max(dataset["omega"].values))  # get the highest entry
         new_max["omega"] = max(new_omega)  # change the coordinate
         dataset = xr.concat([dataset, new_max], dim="omega")  # and concat
 

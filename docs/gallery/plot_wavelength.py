@@ -6,9 +6,10 @@ Wave-length for a given frequency can be calculated using .. function::helpers.w
 
 """
 
-import numpy as np
-from mafredo.helpers import wavelength
 import matplotlib.pyplot as plt
+import numpy as np
+
+from mafredo.helpers import wavelength
 
 T = np.linspace(1, 20)
 omega = 2 * np.pi / T

@@ -1,12 +1,10 @@
-from mafredo import Hyddb1
-
 from numpy.testing import assert_allclose
+
+from mafredo import Hyddb1
 
 
 def test_read_ofx_conventions(data_path):
-    lags = Hyddb1.create_from_orcaflex_yml(
-        filename=data_path / "refcase_ofx_lags.yml", vessel_type_name="Vessel type1"
-    )
+    lags = Hyddb1.create_from_orcaflex_yml(filename=data_path / "refcase_ofx_lags.yml", vessel_type_name="Vessel type1")
     leads = Hyddb1.create_from_orcaflex_yml(
         filename=data_path / "refcase_ofx_leads.yml", vessel_type_name="Vessel type1"
     )
@@ -24,6 +22,4 @@ def test_read_ofx_conventions(data_path):
     rao90_leads_zd.regrid_direction(90)
 
     assert_allclose(rao90_lags._data["phase"].values, rao90_leads._data["phase"].values)
-    assert_allclose(
-        rao90_leads_zd._data["phase"].values, rao90_lags._data["phase"].values
-    )
+    assert_allclose(rao90_leads_zd._data["phase"].values, rao90_lags._data["phase"].values)

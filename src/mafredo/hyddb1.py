@@ -1,19 +1,21 @@
 from warnings import warn
+
 import matplotlib.pyplot as plt
-import xarray as xr
 import numpy as np
-from mafredo.rao import Rao
+import xarray as xr
+
 from mafredo.helpers import (
-    expand_omega_dim_const,
-    dof_names_to_numbers,
-    MotionMode,
-    Symmetry,
-    MotionModeToStr,
     FrequencyUnit,
+    MotionMode,
+    MotionModeToStr,
+    Symmetry,
+    dof_names_to_numbers,
+    expand_omega_dim_const,
 )
+from mafredo.rao import Rao
 
 
-class Hyddb1(object):
+class Hyddb1:
     """
     Hydrodynamic Database 1st Order
     ================================
@@ -135,7 +137,9 @@ class Hyddb1(object):
         self._N_to_kN = 1 / 1000
 
     def __repr__(self):
-        return f"Hydrodynamic database with {self.n_frequencies} frequencies and {self.n_wave_directions} wave directions"
+        return (
+            f"Hydrodynamic database with {self.n_frequencies} frequencies and {self.n_wave_directions} wave directions"
+        )
 
     def copy(self):
         """Returns a deep copy of the database"""
@@ -154,9 +158,7 @@ class Hyddb1(object):
 
         for i in range(6):
             if len(self._mass.omega) != len(self._force[i].omega):
-                raise ValueError(
-                    f"Mass and force[{i}] have different number of frequencies"
-                )
+                raise ValueError(f"Mass and force[{i}] have different number of frequencies")
 
         # check headings
         if self.n_wave_directions != self._force[0].n_wave_directions:
@@ -225,10 +227,7 @@ class Hyddb1(object):
 
         if self.symmetry == Symmetry.XZ:
             do_xz()
-        elif self.symmetry == Symmetry.XZ_and_YZ:
-            do_xz()
-            do_yz()
-        elif self.symmetry == Symmetry.Circular:
+        elif self.symmetry == Symmetry.XZ_and_YZ or self.symmetry == Symmetry.Circular:
             do_xz()
             do_yz()
         elif self.symmetry == Symmetry.No:
@@ -255,9 +254,7 @@ class Hyddb1(object):
         self._mass = newmass
         self._damping = newdamping
 
-    def save_as(
-        self, filename, engine: str = "h5netcdf"
-    ):
+    def save_as(self, filename, engine: str = "h5netcdf"):
         """Saves the contents of the database using the netcdf format.
 
         See Also:
@@ -335,9 +332,7 @@ class Hyddb1(object):
 
         R._force = list()
         for mode in MotionMode:
-            with xr.open_dataset(
-                filename, group=MotionModeToStr(mode), engine="h5netcdf"
-            ) as ds:
+            with xr.open_dataset(filename, group=MotionModeToStr(mode), engine="h5netcdf") as ds:
                 r = Rao.create_from_xarray_nocomplex(ds, mode)
                 R._force.append(r)
 
@@ -349,27 +344,19 @@ class Hyddb1(object):
         except Exception:
             if R.n_wave_directions == 1:
                 R.symmetry = Symmetry.Circular
-                warn(
-                    f"Guessing symmetry for {filename} to be Circular because only one heading is present"
-                )
+                warn(f"Guessing symmetry for {filename} to be Circular because only one heading is present")
             else:
                 max_dir = np.max(R.wave_directions)
 
                 if max_dir <= 90:
                     R.symmetry = Symmetry.XZ_and_YZ
-                    warn(
-                        f"Guessing symmetry for {filename} to be XZ_and_YZ because maximum heading = {max_dir} deg"
-                    )
+                    warn(f"Guessing symmetry for {filename} to be XZ_and_YZ because maximum heading = {max_dir} deg")
                 elif max_dir <= 180:
                     R.symmetry = Symmetry.XZ
-                    warn(
-                        f"Guessing symmetry for {filename} to be XZ (PS/SB) because maximum heading = {max_dir} deg"
-                    )
+                    warn(f"Guessing symmetry for {filename} to be XZ (PS/SB) because maximum heading = {max_dir} deg")
                 else:
                     R.symmetry = Symmetry.No
-                    warn(
-                        f"Guessing no symmetry for {filename} because maximum heading is {max_dir} deg"
-                    )
+                    warn(f"Guessing no symmetry for {filename} because maximum heading is {max_dir} deg")
 
         # check symmetry and warn if not consistent with headings
         if R.symmetry == Symmetry.XZ:
@@ -378,9 +365,7 @@ class Hyddb1(object):
         elif R.symmetry == Symmetry.No:
             if np.any(R.wave_directions > 90):
                 if np.all(R.wave_directions <= 180):
-                    warn(
-                        "Symmetry is not present, but no headings exceeding 180 degrees were found"
-                    )
+                    warn("Symmetry is not present, but no headings exceeding 180 degrees were found")
 
         try:
             R._check_dimensions()  # self-check
@@ -401,15 +386,14 @@ class Hyddb1(object):
             Rao.wave_force_from_capytaine
         """
 
-
         from capytaine.io.xarray import merge_complex_values
+
         dataset = merge_complex_values(xr.open_dataset(filename))
 
         return Hyddb1.create_from_capytaine_dataset(dataset)
 
     @staticmethod
     def create_from_capytaine_dataset(dataset):
-
         R = Hyddb1()
 
         R._force.clear()
@@ -466,7 +450,7 @@ class Hyddb1(object):
 
         R = Hyddb1()
 
-        with open(filename, "r") as f:
+        with open(filename) as f:
             for line in f.readlines():
                 line = line.strip("\n")  # remove newline characters
 
@@ -595,7 +579,7 @@ class Hyddb1(object):
         import yaml
 
         # Orcaflex exported .yml files contain two "documents", separated by '---' , we want the second one.
-        with open(filename, "r", encoding="utf-8") as stream:
+        with open(filename, encoding="utf-8") as stream:
             # Cast to list to read all documents before stream goes out of scope
             documents = list(yaml.safe_load_all(stream))
 
@@ -619,7 +603,7 @@ class Hyddb1(object):
         if vessel_type is None:
             vessel_types = [vt["Name"] for vt in vessel_types]
             raise ValueError(
-                f'No vessel type found with name "{vessel_type_name}", available names are {str(vessel_types)}'
+                f'No vessel type found with name "{vessel_type_name}", available names are {vessel_types!s}'
             )
 
         # conventions and conversions
@@ -634,9 +618,7 @@ class Hyddb1(object):
             elif PeriodOrFrequency == "frequency (Hz)":
                 return 2 * np.pi * np.array(values, dtype=float)
             else:
-                raise ValueError(
-                    f'Unknown setting for "WavesReferredToBy" : {PeriodOrFrequency}'
-                )
+                raise ValueError(f'Unknown setting for "WavesReferredToBy" : {PeriodOrFrequency}')
 
         RAOPhaseUnitsConvention = vessel_type["RAOPhaseUnitsConvention"]
 
@@ -646,9 +628,7 @@ class Hyddb1(object):
             elif RAOPhaseUnitsConvention == "radians":
                 pass
             else:
-                raise ValueError(
-                    f'Unknown setting for "RAOPhaseUnitsConvention" : {RAOPhaseUnitsConvention}'
-                )
+                raise ValueError(f'Unknown setting for "RAOPhaseUnitsConvention" : {RAOPhaseUnitsConvention}')
 
             if vessel_type["RAOPhaseConvention"] == "leads":
                 values = -values
@@ -682,10 +662,7 @@ class Hyddb1(object):
             ]
             for d in adb
         ]
-        damp = [
-            d["DampingX, DampingY, DampingZ, DampingRx, DampingRy, DampingRz"]
-            for d in adb
-        ]
+        damp = [d["DampingX, DampingY, DampingZ, DampingRx, DampingRy, DampingRz"] for d in adb]
 
         # Wave forces [Load RAO]
         RAOs = d0["LoadRAOs"]["RAOs"]
@@ -745,9 +722,7 @@ class Hyddb1(object):
         try:
             assert_allclose(freqs_wf, freqs)
         except AssertionError as err:
-            raise ValueError(
-                "Different frequencies for wave-forces and added-mass-and-damping"
-            ) from err
+            raise ValueError("Different frequencies for wave-forces and added-mass-and-damping") from err
 
         # ---------- we have all the data now, reshape and feed ---------
 
@@ -783,7 +758,7 @@ class Hyddb1(object):
         elif vessel_type["Symmetry"] == "Circular":
             R.symmetry = Symmetry.Circular
         else:
-            raise ValueError(f"Unsuppored symmetry setting: {vessel_type['Symmetry']}")
+            raise ValueError(f"Unsuppored symmetry setting: {vessel_type["Symmetry"]}")
 
         try:
             R._check_dimensions()  # self-check
@@ -856,9 +831,7 @@ class Hyddb1(object):
         self._damping = self._insert_6x6(self._damping, omega, m6x6)
 
     @staticmethod
-    def create_from_data(
-        omega, added_mass, damping, directions, force_amps, force_phase_rad
-    ):
+    def create_from_data(omega, added_mass, damping, directions, force_amps, force_phase_rad):
         """Creates a new database using the provided data.
 
         Args:
@@ -874,9 +847,7 @@ class Hyddb1(object):
         r.set_data(omega, added_mass, damping, directions, force_amps, force_phase_rad)
         return r
 
-    def set_data(
-        self, omega, added_mass, damping, directions, force_amps, force_phase_rad
-    ):
+    def set_data(self, omega, added_mass, damping, directions, force_amps, force_phase_rad):
         """Sets all internal data for added mass, damping and wave-forces.
 
         Args:
@@ -917,9 +888,7 @@ class Hyddb1(object):
             amps = force_amps[iMode]
             phases = force_phase_rad[iMode]
 
-            rao = Rao.create_from_data(
-                directions=directions, omegas=omega, amplitude=amps, phase=phases
-            )
+            rao = Rao.create_from_data(directions=directions, omegas=omega, amplitude=amps, phase=phases)
             rao.mode = MotionMode(iMode)
             self._force.append(rao)
 
@@ -987,9 +956,7 @@ class Hyddb1(object):
             closest_omega = self.frequencies[closest]
 
             if np.abs(closest_omega - omega) > 1e-3:
-                warn(
-                    f"Closest omega found is {closest_omega} which is more than 1e-3 away from {omega}"
-                )
+                warn(f"Closest omega found is {closest_omega} which is more than 1e-3 away from {omega}")
             to_be_removed.append(closest_omega)
 
         original_omega = self.frequencies
@@ -1103,9 +1070,9 @@ class Hyddb1(object):
 
         def fixed_format(ident, sections):
             secs = [f10(s, tol=1e-6) for s in sections]
-            return "{:10s}".format(ident) + "".join(secs) + "\n"
+            return f"{ident:10s}" + "".join(secs) + "\n"
 
-        with open(filename, "wt") as f:
+        with open(filename, "w") as f:
             # Fist 15 ident lines
             f.write("IDENT     *** .hyd file exported by MaFreDo        ***\n")
             for i in range(14):
@@ -1299,9 +1266,7 @@ class Hyddb1(object):
         from numpy.testing import assert_allclose
 
         assert_allclose(self._mass.values, other._mass.values, rtol=rtol, atol=atol)
-        assert_allclose(
-            self._damping.values, other._damping.values, rtol=rtol, atol=atol
-        )
+        assert_allclose(self._damping.values, other._damping.values, rtol=rtol, atol=atol)
 
         for i in range(6):
             F0 = self._force[i]
