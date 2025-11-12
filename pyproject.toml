@@ -27,10 +27,19 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "deptry>=0.24.0",
+    "mypy>=1.18.2",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
+    "ruff>=0.14.4",
     "setuptools>=80.9.0",
     "setuptools-scm>=9.2.0",
+]
+docs = [
+    "sphinx>=8.1.3",
+]
+mkdocs = [
+    "sphinx>=8.1.3",
 ]
 
 [tool.setuptools]
@@ -66,3 +75,209 @@ universal = true
 [tool.devpi.upload]
 no_vcs = true
 formats = ["bdist_wheel"]
+
+# ========================================================================================
+# 🔹 FORMATTING & LINTING
+# ========================================================================================
+[tool.mypy]
+files = ["src"]
+disallow_untyped_defs = true
+disallow_any_unimported = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = false
+show_error_codes = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = "capytaine.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "click"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "h5py.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "mafredo.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "numpy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pandas"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "PySide6.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "rich.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "scipy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "vtk.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "yaml"
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+fix = true
+
+[tool.ruff.lint]
+select = [
+    # flake8-2020
+    "YTT",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-builtins
+    "A",
+    # flake8-comprehensions
+    "C4",
+    # flake8-debugger
+    "T10",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # mccabe
+    "C90",
+    # pycodestyle
+    "E",
+    "W",
+    # pyflakes
+    "F",
+    # pygrep-hooks
+    "PGH",
+    # pyupgrade
+    "UP",
+    # ruff
+    "RUF",
+    # tryceratops
+    "TRY",
+]
+ignore = [
+    # LineTooLong
+    "E501",
+    # DoNotAssignLambda
+    "E731",
+    # long messages in exception handlers
+    "TRY003",
+    # function complexity
+    "C901",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*test*.py" = ["S101"]
+"*_test.py" = ["S101"]
+"tests/*" = ["S101"]
+
+[tool.ruff.format]
+preview = true
+
+[tool.coverage.report]
+skip_empty = true
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = [
+    "tests/*",
+]
+
+
+# ========================================================================================
+# 🔹 DEBTRY
+# ========================================================================================
+[tool.deptry]
+exclude = ["examples", ".tox", ".venv", "tests"]
+package_module_name_map = { pymeshup = "pymeshup" }
+# This section defines which errors to ignore for which packages.
+# It is NOT an inline table, but a nested table structure.
+
+[tool.deptry.per_rule_ignores]
+# Ignore "unused dependency" errors (DEP002) for these packages
+"DEP002" = [
+    "h5netcdf",
+    "vtk",
+    "pytest",
+    "pre-commit",
+    "tox-uv",
+    "deptry",
+    "mypy",
+    "pandas-stubs",
+    "pytest-cov",
+    "ruff",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings",
+    "pyglet",
+    "types-PyYAML",
+]
+
+# Ignore "transitive dependency" error (DEP003) for our own package
+"DEP003" = ["fleetmaster"]
+
+
+# ========================================================================================
+# 🔹 TOX
+# ========================================================================================
+[tool.tox]
+requires = ["tox>4", "tox-uv>=1.11.3"]
+isolated_build = true
+env_list = ["py310", "py311", "py312", "py313", "fix", "dev", "type", "build"]
+
+# === testenv to run pytest over all your environment ===
+[tool.tox.env_run_base]
+# this section runs the python tests using pytest, and coverage fo the python version given in your env_list
+# to run one of the environments, use `tox -e py39` for example
+# to run all environments, use `tox`
+description = "Invoke pytest to run automated tests under {env_name} with coverage"
+changedir = "{toxinidir}"
+allowlist_externals = ["pytest", "uv"]
+dependency_groups = ["dev"]
+commands = [["pytest"]]
+
+[tool.tox.env.build]
+description = "Build the package using uv"
+changedir = "{toxinidir}"
+commands = [["uv", "build"]]
+allowlist_externals = ["uv"]
+
+[tool.tox.env.fix]
+runner = "uv-venv-runner"
+description = "run code formatter and linter (auto-fix)"
+skip_install = true
+dependency_groups = ["dev"]
+deps = ["pre-commit-uv >= 4.1.1"]
+commands = [["pre-commit", "run", "--all-files", "--show-diff-on-failure"]]
+
+[tool.tox.env.type]
+runner = "uv-venv-lock-runner"
+description = "run type checker via mypy"
+dependency_groups = ["dev"]
+deps = ["."]
+commands = [["mypy", "{posargs:src}"]]
+
+[tool.tox.env.dev]
+runner = "uv-venv-lock-runner"
+description = "dev environment"
+dependency_groups = ["dev"]
+commands = [["uv", "pip", "tree"]]
