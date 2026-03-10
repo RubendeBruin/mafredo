@@ -1,6 +1,5 @@
 from warnings import warn
 
-import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
@@ -1147,6 +1146,8 @@ class Hyddb1:
             f.write("END\n")
 
     def _plot_amass_or_damping(self, data, ylab, unit: FrequencyUnit):
+        import matplotlib.pyplot as plt
+
         fig, axes = plt.subplots(3, 2, figsize=(10, 15))
         axes = axes.flatten()
 
