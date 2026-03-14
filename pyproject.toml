@@ -17,12 +17,12 @@ classifiers = [
     "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
 ]
 dependencies = [
-    "capytaine>=2.3",
     "matplotlib>=3.10.7",
     "h5netcdf>=1.6.3",
     "numpy>=2",
     "pyyaml>=6.0.3",
     "xarray>=2025.6.1",
+    "scipy"
 ]
 
 [dependency-groups]

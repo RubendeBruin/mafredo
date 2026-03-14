@@ -4,6 +4,30 @@ import numpy as np
 import xarray as xr
 from scipy.optimize import fsolve
 
+# fallback when capytaine is not available
+try:
+    from capytaine.io.xarray import merge_complex_values
+except ImportError:
+    """This function is a direct copy of capyaine in case capytaine itself is not available"""
+    def merge_complex_values(ds: xr.Dataset) -> xr.Dataset:
+        """Return a new Dataset where real-valued arrays of shape (2, ...)
+        have been replaced by complex-valued arrays of shape (...).
+
+        .. seealso::
+            :func:`separate_complex_values`
+                The invert operation
+        """
+        if 'complex' in ds.coords:
+            ds = ds.copy()
+            for variable in ds.data_vars:
+                if 'complex' in ds[variable].coords:
+                    da = ds[variable]
+                    new_dims = [d for d in da.dims if d != 'complex']
+                    new_da = xr.DataArray(da.sel(complex='re').data + 1j*da.sel(complex='im').data, dims=new_dims)
+                    ds[variable] = new_da
+            ds = ds.drop_vars('complex')
+        return ds
+
 
 class FrequencyUnit(Enum):
     Hz = 0

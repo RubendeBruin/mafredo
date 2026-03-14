@@ -273,8 +273,7 @@ class Rao:
             _test.wave_force_from_capytaine(r"capytaine.nc", MotionMode.HEAVE)
 
         """
-
-        from capytaine.io.xarray import merge_complex_values
+        from mafredo.helpers import merge_complex_values
 
         dataset = merge_complex_values(xr.open_dataset(filename))
 
