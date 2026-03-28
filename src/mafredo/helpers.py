@@ -1,7 +1,33 @@
+from enum import Enum
+
 import numpy as np
 import xarray as xr
 from scipy.optimize import fsolve
-from enum import Enum
+
+# fallback when capytaine is not available
+try:
+    from capytaine.io.xarray import merge_complex_values
+except ImportError:
+    """This function is a direct copy of capyaine in case capytaine itself is not available"""
+    def merge_complex_values(ds: xr.Dataset) -> xr.Dataset:
+        """Return a new Dataset where real-valued arrays of shape (2, ...)
+        have been replaced by complex-valued arrays of shape (...).
+
+        .. seealso::
+            :func:`separate_complex_values`
+                The invert operation
+        """
+        if 'complex' in ds.coords:
+            ds = ds.copy()
+            for variable in ds.data_vars:
+                if 'complex' in ds[variable].coords:
+                    da = ds[variable]
+                    new_dims = [d for d in da.dims if d != 'complex']
+                    new_da = xr.DataArray(da.sel(complex='re').data + 1j*da.sel(complex='im').data, dims=new_dims)
+                    ds[variable] = new_da
+            ds = ds.drop_vars('complex')
+        return ds
+
 
 class FrequencyUnit(Enum):
     Hz = 0
@@ -10,13 +36,14 @@ class FrequencyUnit(Enum):
 
     def to_unit(self, omega):
         if self == FrequencyUnit.Hz:
-            return 'Hz', omega / (2*np.pi)
+            return "Hz", omega / (2 * np.pi)
         elif self == FrequencyUnit.rad_s:
-            return 'rad/s', omega
+            return "rad/s", omega
         elif self == FrequencyUnit.seconds:
-            return 's', (2*np.pi) / omega
+            return "s", (2 * np.pi) / omega
         else:
-            raise ValueError('Unknown unit')
+            raise ValueError("Unknown unit")
+
 
 class Symmetry(Enum):
     No = 0
@@ -24,6 +51,7 @@ class Symmetry(Enum):
     YZ = 2
     XZ_and_YZ = 3
     Circular = 4
+
 
 class MotionMode(Enum):
     SURGE = 0
@@ -33,27 +61,29 @@ class MotionMode(Enum):
     PITCH = 4
     YAW = 5
 
+
 def MotionModeToStr(mode: MotionMode) -> str:
     """These are used in the netcdf databases"""
 
     if mode == MotionMode.SURGE:
-        cmode = 'Surge'
+        cmode = "Surge"
     elif mode == MotionMode.SWAY:
-        cmode = 'Sway'
+        cmode = "Sway"
     elif mode == MotionMode.HEAVE:
-        cmode = 'Heave'
+        cmode = "Heave"
     elif mode == MotionMode.ROLL:
-        cmode = 'Roll'
+        cmode = "Roll"
     elif mode == MotionMode.PITCH:
-        cmode = 'Pitch'
+        cmode = "Pitch"
     elif mode == MotionMode.YAW:
-        cmode = 'Yaw'
+        cmode = "Yaw"
     else:
-        raise ValueError('Unknonwn mode')
+        raise ValueError("Unknonwn mode")
 
     return cmode
 
-def wavelength(omega, waterdepth = 0):
+
+def wavelength(omega, waterdepth=0):
     """Returns the wave-length for this frequency [rad/s] and waterdepth.
 
     In deep water the wave-length is 2*pi*g / omega^2
@@ -70,20 +100,19 @@ def wavelength(omega, waterdepth = 0):
         waterdepth : waterdepth in [m], use 0 for infinite waterdepth
     """
 
-
-    if waterdepth==0:
-        return 2*np.pi*9.81 / omega**2
-
+    if waterdepth == 0:
+        return 2 * np.pi * 9.81 / omega**2
 
     def error(guess_wavelength):
-        k = 2*np.pi / guess_wavelength
-        c = np.sqrt((9.81/k) * np.tanh(k*waterdepth))
-        wavelength = 2*np.pi*c / omega
+        k = 2 * np.pi / guess_wavelength
+        c = np.sqrt((9.81 / k) * np.tanh(k * waterdepth))
+        wavelength = 2 * np.pi * c / omega
 
         return guess_wavelength - wavelength
 
-    x = fsolve(error, 2*np.pi*9.81 / omega**2)
+    x = fsolve(error, 2 * np.pi * 9.81 / omega**2)
     return x
+
 
 def dof_names_to_numbers(ds):
     """Converts the names of the DOFS to numbers. This is unfortunately required to make sure
@@ -98,12 +127,13 @@ def dof_names_to_numbers(ds):
     # re-name and order
 
     def names_to_ind(dof_names):
-        dof_names[dof_names == 'Surge'] = 0
-        dof_names[dof_names == 'Sway'] = 1
-        dof_names[dof_names == 'Heave'] = 2
-        dof_names[dof_names == 'Roll'] = 3
-        dof_names[dof_names == 'Pitch'] = 4
-        dof_names[dof_names == 'Yaw'] = 5
+        dof_names = dof_names.copy()
+        dof_names[dof_names == "Surge"] = 0
+        dof_names[dof_names == "Sway"] = 1
+        dof_names[dof_names == "Heave"] = 2
+        dof_names[dof_names == "Roll"] = 3
+        dof_names[dof_names == "Pitch"] = 4
+        dof_names[dof_names == "Yaw"] = 5
 
         # change the type to int, else they remain strings which causes errors in selection later on
         dof_names = dof_names.astype(int)
@@ -116,10 +146,11 @@ def dof_names_to_numbers(ds):
     dof_names = names_to_ind(ds.radiating_dof.values)
     ds = ds.assign_coords(radiating_dof=dof_names)
 
-    ds = ds.sortby('radiating_dof')
-    ds = ds.sortby('influenced_dof')
+    ds = ds.sortby("radiating_dof")
+    ds = ds.sortby("influenced_dof")
 
     return ds
+
 
 # def fix_order_dofs(m):
 #     """M can have a single omega, or multiple"""
@@ -149,6 +180,7 @@ def dof_names_to_numbers(ds):
 #
 #         return r
 
+
 def expand_omega_dim_const(dataset, new_omega):
     """Expands the omega axis of dataset to cover the range of new_omega. Extrapolation is done by repeating the nearest values (ie: keep constant)
 
@@ -156,15 +188,15 @@ def expand_omega_dim_const(dataset, new_omega):
         expanded dataset
     """
 
-    if min(new_omega) < min(dataset['omega'].values):
-        new_minimum = dataset.sel(omega=min(dataset['omega'].values))  # get the lowest entry
-        new_minimum['omega'] = min(new_omega)  # change coordinate
-        dataset = xr.concat([dataset, new_minimum], dim='omega')  # and concat
+    if min(new_omega) < min(dataset["omega"].values):
+        new_minimum = dataset.sel(omega=min(dataset["omega"].values))  # get the lowest entry
+        new_minimum["omega"] = min(new_omega)  # change coordinate
+        dataset = xr.concat([dataset, new_minimum], dim="omega")  # and concat
 
-    if max(new_omega) > max(dataset['omega'].values):
-        new_max = dataset.sel(omega=max(dataset['omega'].values))  # get the highest entry
-        new_max['omega'] = max(new_omega)  # change the coordinate
-        dataset = xr.concat([dataset, new_max], dim='omega')  # and concat
+    if max(new_omega) > max(dataset["omega"].values):
+        new_max = dataset.sel(omega=max(dataset["omega"].values))  # get the highest entry
+        new_max["omega"] = max(new_omega)  # change the coordinate
+        dataset = xr.concat([dataset, new_max], dim="omega")  # and concat
 
     return dataset
 
@@ -175,21 +207,20 @@ def expand_direction_to_full_range(dataset):
     Returns:
         expanded dataset
     """
-    headings = dataset.coords['wave_direction'].values
+    headings = dataset.coords["wave_direction"].values
 
     if max(headings) - min(headings) < 360:
-
         if max(headings) < 360:
             head_first = headings[0]
             head360 = dataset.sel(wave_direction=head_first)
-            head360.coords['wave_direction'].values += 360
-            dataset = xr.concat([dataset, head360], dim='wave_direction')
+            head360.coords["wave_direction"].values += 360
+            dataset = xr.concat([dataset, head360], dim="wave_direction")
 
         if min(headings) > 0:
             head_last = headings[-1]
             head360 = dataset.sel(wave_direction=head_last)
-            head360.coords['wave_direction'].values -= 360
-            dataset = xr.concat([dataset, head360], dim='wave_direction')
+            head360.coords["wave_direction"].values -= 360
+            dataset = xr.concat([dataset, head360], dim="wave_direction")
 
     return dataset
 
@@ -211,22 +242,18 @@ def f10(number, tol=1e-12):
     # scientific notation
 
     if abs(number) < tol:
-        return '         0'
+        return "         0"
 
-    for formatter in ['{:10g}','{:.6g}','{:.5g}','{:.4g}','{:.3g}','{:.2g}']:
+    for formatter in ["{:10g}", "{:.6g}", "{:.5g}", "{:.4g}", "{:.3g}", "{:.2g}"]:
         s = formatter.format(number)
 
         if len(s) == 10:
             return s
         if len(s) < 10:
-            return (10-len(s))*' '+s
+            return (10 - len(s)) * " " + s
 
-    raise ValueError(f'Can not convert number {number} to a string with length 10')
+    raise ValueError(f"Can not convert number {number} to a string with length 10")
+
 
 if __name__ == "__main__":
     pass
-
-
-
-
-
