@@ -127,6 +127,7 @@ def dof_names_to_numbers(ds):
     # re-name and order
 
     def names_to_ind(dof_names):
+        dof_names = dof_names.copy()
         dof_names[dof_names == "Surge"] = 0
         dof_names[dof_names == "Sway"] = 1
         dof_names[dof_names == "Heave"] = 2
