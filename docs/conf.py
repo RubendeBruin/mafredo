@@ -7,18 +7,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import os
-import sys
 import inspect
+import os
 import shutil
-import sphinx_rtd_theme
-
+import sys
 
 # -- Path setup --------------------------------------------------------------
 
-__location__ = os.path.join(
-    os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe()))
-)
+__location__ = os.path.join(os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe())))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -48,9 +44,7 @@ except FileNotFoundError:
 try:
     import sphinx
 
-    cmd_line_template = (
-        "sphinx-apidoc --implicit-namespaces -f -o {outputdir} {moduledir}"
-    )
+    cmd_line_template = "sphinx-apidoc --implicit-namespaces -f -o {outputdir} {moduledir}"
     cmd_line = cmd_line_template.format(outputdir=output_dir, moduledir=module_dir)
 
     args = cmd_line.split(" ")
@@ -60,7 +54,7 @@ try:
 
     apidoc.main(args)
 except Exception as e:
-    print("Running `sphinx-apidoc` failed!\n{}".format(e))
+    print(f"Running `sphinx-apidoc` failed!\n{e}")
 
 # -- General configuration ---------------------------------------------------
 
@@ -86,8 +80,8 @@ extensions = [
 ]
 
 sphinx_gallery_conf = {
-     'examples_dirs': './gallery',   # path to your example scripts
-     'gallery_dirs': 'auto_gallery',  # path to where to save gallery generated output
+    "examples_dirs": "./gallery",  # path to your example scripts
+    "gallery_dirs": "auto_gallery",  # path to where to save gallery generated output
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -95,9 +89,9 @@ templates_path = ["_templates"]
 
 # The suffix of source filenames.
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.txt': 'markdown',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
 }
 
 # The encoding of source files.
@@ -167,10 +161,7 @@ html_theme = "sphinx_rtd_theme"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "sidebar_width": "300px",
-    "page_width": "1200px"
-}
+html_theme_options = {"sidebar_width": "300px", "page_width": "1200px"}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -259,9 +250,7 @@ latex_elements = {
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [
-    ("index", "user_guide.tex", "MaFreDo Documentation", "Ruben de Bruin", "manual")
-]
+latex_documents = [("index", "user_guide.tex", "MaFreDo Documentation", "Ruben de Bruin", "manual")]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.

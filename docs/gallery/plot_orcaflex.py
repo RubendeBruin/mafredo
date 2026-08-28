@@ -18,25 +18,21 @@ degrees of headings.
 (Note: Orcaflex and OrcaWave are products by Orcina : https://www.orcina.com/orcaflex/ )
 """
 
-from mafredo import Hyddb1
+from mafredo import Hyddb1, show
 
 try:
     data = Hyddb1.create_from_orcaflex_yml(
-        filename="./barge_100x30x4_q1.yml",
-        vessel_type_name="Vessel type1",
-        iDraught=0
+        filename="./barge_100x30x4_q1.yml", vessel_type_name="Vessel type1", iDraught=0
     )
 
     print(data.symmetry)
-    data.plot(adm=False, damp=False)
+    show(data.plot(adm=False, damp=False))
 
     data.expand360_using_symmetry()
 
     print(data.symmetry)
-    data.plot(adm=False, damp=False)
+    show(data.plot(adm=False, damp=False))
 
-except:
-    pass # read-the-docs
-
-
-
+except Exception as err:
+    print(err)
+    pass  # read-the-docs

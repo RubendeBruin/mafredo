@@ -3,5 +3,3 @@ RAO
 
 
 .. autoclass:: mafredo.Rao
-
-

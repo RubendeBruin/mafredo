@@ -6,10 +6,10 @@ Minimum example
 
 """
 
-from mafredo import *
+from pathlib import Path
 
-# First create the object
-vessel = Hyddb1.create_from_hyd('barge.hyd')
+from mafredo import Hyddb1, FrequencyUnit, show
 
-# and finally plot
-vessel.plot()
+file_name = Path(__file__).parent / "barge.hyd"
+vessel = Hyddb1.create_from_hyd(filename=file_name)
+show(vessel.plot(unit=FrequencyUnit.seconds, xlim=20))
