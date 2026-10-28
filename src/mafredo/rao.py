@@ -13,6 +13,27 @@ __license__ = "mpl2"
 
 # ----- helpers -----
 
+# The colours of the "dave Rainbow" colormap (dave_common.colors.colormap_daverainbow) that
+# wave-dave uses for its RAO plots. Copied rather than imported: mafredo does not depend on dave.
+_HEADING_COLORS = ["#050042", "#638cf0", "#26A69A", "#8BC34A", "#F9A825", "#ff574d", "#f545c4"]
+
+
+def _heading_style(heading):
+    """Color and linestyle for a wave-direction [deg] in a line plot, as wave-dave plots RAOs.
+
+    0 deg is the first color of the colormap and 180 deg the last. A heading past 180 gets the
+    color of its mirror image about the x-axis (360 - heading) and a dashed line, so that the
+    two sides of a symmetric vessel are drawn in the same color.
+    """
+    from matplotlib.colors import LinearSegmentedColormap
+
+    cmap = LinearSegmentedColormap.from_list("dave Rainbow", _HEADING_COLORS, N=256)
+
+    heading = float(np.mod(heading, 360))
+    if heading > 180:
+        return cmap((360 - heading) / 180), "--"
+    return cmap(heading / 180), "-"
+
 
 def _complex_unit_add(data):
     data["complex_unit"] = np.exp(1j * data["phase"])
@@ -544,7 +565,7 @@ class Rao:
         return self.plot("phase", ax=ax, unit=unit, xlim=xlim)
 
     def plot(self, what="amplitude", ax=None, unit=FrequencyUnit.rad_s, xlim=None):
-        """Plots amplitude or phase, one line per wave-direction.
+        """Plots amplitude or phase, one line per wave-direction, colored by heading (see _heading_style).
 
         Args:
             what: "amplitude" or "phase"
@@ -571,13 +592,14 @@ class Rao:
 
         for heading in headings:
             data = self._data[what].sel(wave_direction=heading).values
-            ax.plot(x, data, label=f"{heading}")
+            color, linestyle = _heading_style(heading)
+            ax.plot(x, data, label=f"{heading:g}", color=color, linestyle=linestyle)
 
         if xlim is not None:
             ax.set_xlim(0, xlim)
 
         if self.n_wave_directions > 1:
-            ax.legend()
+            ax.legend(title="Heading [deg]")
 
         ax.set_ylabel("Amplitude" if what == "amplitude" else "Phase [rad]")
         ax.set_xlabel(f"Frequency [{unit_label}]")
