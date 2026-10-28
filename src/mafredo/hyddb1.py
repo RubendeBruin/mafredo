@@ -1266,12 +1266,33 @@ class Hyddb1:
         # --- RAO amplitudes
 
         if amp:
-            fig = Figure(figsize=(7, 7))
+            # The headings are the same in every subplot, so the legend is drawn once: next to
+            # the bottom-right subplot, outside it, in as many columns as it takes to keep it
+            # about as tall as that subplot. The figure is widened by what those columns take.
+            n_headings = len(self.wave_directions)
+            legend_columns = max(1, int(np.ceil(n_headings / 12)))
+
+            fig = Figure(figsize=(7 + 0.6 * legend_columns, 7))
             axes = fig.subplots(3, 2).flatten()
             for i in range(6):
                 force = self._force[i]
                 force.plot_amplitude(ax=axes[i], unit=unit, xlim=xlim)
                 axes[i].set_title(self._modes[i])
+
+                legend = axes[i].get_legend()
+                if legend is not None:
+                    legend.remove()
+
+            if n_headings > 1:
+                axes[5].legend(
+                    title="Heading [deg]",
+                    loc="lower left",
+                    bbox_to_anchor=(1.02, 0),
+                    ncol=legend_columns,
+                    fontsize=6,
+                    title_fontsize=6,
+                )
+
             fig.suptitle("Force RAO amplitudes")
 
 
